@@ -1,0 +1,13 @@
+bin/
+obj/
+*.user
+*.suo
+.vs/
+publish/
+TestResults/
+
+# Nunca versionar arquivos do jogo
+*.img
+*.dff
+*.txd
+*.bak

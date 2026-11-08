@@ -1,0 +1,216 @@
+<Window x:Class="SaSkinManager.App.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="SA Skin Manager" Width="1280" Height="800" MinWidth="1000" MinHeight="600"
+        WindowStartupLocation="CenterScreen" Background="{StaticResource Bg}">
+    <Window.Resources>
+        <DataTemplate x:Key="Placeholder">
+            <Border Background="{StaticResource PanelAlt}" CornerRadius="4">
+                <TextBlock Text="?" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource FgDim}"/>
+            </Border>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Barra superior -->
+        <Border Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}" BorderThickness="0,0,0,1" Padding="16,10,10,4">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="Pasta do jogo…" Click="ChangeFolder_Click"/>
+                    <Button Content="Abrir pasta" Command="{Binding OpenGameFolderCommand}"/>
+                    <Button Content="Reescanear" Command="{Binding RescanCommand}"/>
+                    <Button Content="▶  Jogar" Style="{StaticResource Primary}" Command="{Binding PlayCommand}"/>
+                </StackPanel>
+                <StackPanel Margin="0,0,0,6">
+                    <TextBlock FontSize="18" FontWeight="SemiBold">
+                        <Run Text="SA Skin Manager"/>
+                        <Run Text="  ·  " Foreground="{StaticResource FgDim}"/>
+                        <Run Text="{Binding ModeBadge, Mode=OneWay}" FontSize="12" Foreground="{StaticResource Accent}"/>
+                    </TextBlock>
+                    <TextBlock Text="{Binding GamePath}" Style="{StaticResource Dim}"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="340"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="320"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Personagens -->
+            <DockPanel Grid.Column="0" Margin="0,0,12,0">
+                <TextBlock DockPanel.Dock="Top" Style="{StaticResource H2}">
+                    <Run Text="Personagens"/>
+                    <Run Text="{Binding PedCount, Mode=OneWay, StringFormat=({0})}" Foreground="{StaticResource FgDim}"/>
+                </TextBlock>
+                <TextBox DockPanel.Dock="Top" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6"
+                         ToolTip="Buscar por nome, modelo (ex.: bmybar) ou ID"/>
+                <ComboBox DockPanel.Dock="Top" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" Margin="0,0,0,8"/>
+                <ListBox ItemsSource="{Binding PedsView}" SelectedItem="{Binding SelectedPed}" VirtualizingPanel.IsVirtualizing="True">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel>
+                                <Border DockPanel.Dock="Left" Width="44" Height="44" CornerRadius="4" Background="{StaticResource PanelAlt}" Margin="0,0,10,0" ClipToBounds="True">
+                                    <Grid>
+                                        <TextBlock Text="{Binding Title[0]}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource FgDim}" FontSize="18"/>
+                                        <Image Source="{Binding Thumb}" Stretch="UniformToFill"/>
+                                    </Grid>
+                                </Border>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{Binding Subtitle}" Style="{StaticResource Dim}"/>
+                                    <TextBlock Text="{Binding SwapText}" Foreground="{StaticResource Accent}" FontSize="12"
+                                               Visibility="{Binding IsSwapped, Converter={StaticResource BoolToVis}}" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+
+            <!-- Detalhes / troca -->
+            <Border Grid.Column="1" Background="{StaticResource Panel}" CornerRadius="8" Padding="18" Margin="0,0,12,0">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Visibility="{Binding HasSelection, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="{Binding SelectedPed.Title}" FontSize="22" FontWeight="SemiBold"/>
+                        <TextBlock Style="{StaticResource Dim}" Margin="0,2,0,0">
+                            <Run Text="{Binding SelectedPed.Model.Category, Mode=OneWay}"/>
+                            <Run Text=" · "/>
+                            <Run Text="{Binding SelectedPed.Model.Description, Mode=OneWay}"/>
+                        </TextBlock>
+
+                        <Grid Margin="0,18,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="60"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="ORIGINAL" Style="{StaticResource Dim}" Margin="0,0,0,6"/>
+                                <Border Height="200" CornerRadius="6" Background="{StaticResource PanelAlt}" ClipToBounds="True">
+                                    <Grid>
+                                        <TextBlock Text="sem miniatura" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource Dim}"/>
+                                        <Image Source="{Binding SelectedPed.Thumb}" Stretch="Uniform"/>
+                                    </Grid>
+                                </Border>
+                                <TextBlock Style="{StaticResource Dim}" Margin="0,6,0,0">
+                                    <Run Text="{Binding SelectedPed.Model.ModelName, Mode=OneWay, StringFormat={}{0}.dff}"/>
+                                    <Run Text=" + "/>
+                                    <Run Text="{Binding SelectedPed.Model.TxdName, Mode=OneWay, StringFormat={}{0}.txd}"/>
+                                    <Run Text=" · "/>
+                                    <Run Text="{Binding SelectedPed.Model.ImgName, Mode=OneWay}"/>
+                                </TextBlock>
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" Text="→" FontSize="34" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource Accent}"/>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="NOVA SKIN (selecione na biblioteca)" Style="{StaticResource Dim}" Margin="0,0,0,6"/>
+                                <Border Height="200" CornerRadius="6" Background="{StaticResource PanelAlt}" ClipToBounds="True">
+                                    <Grid>
+                                        <TextBlock Text="nenhuma skin selecionada" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource Dim}"/>
+                                        <Image Source="{Binding SelectedSkin.Thumb}" Stretch="Uniform"/>
+                                    </Grid>
+                                </Border>
+                                <TextBlock Text="{Binding SelectedSkin.Title}" Margin="0,6,0,0" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Border Margin="0,16,0,0" Padding="10" CornerRadius="6" Background="{StaticResource AccentDim}"
+                                Visibility="{Binding SelectedPed.IsCj, Converter={StaticResource BoolToVis}, FallbackValue=Collapsed}">
+                            <TextBlock TextWrapping="Wrap" FontSize="12"
+                                       Text="CJ é especial: o corpo dele vem das peças de roupa do player.img. Use skins importadas como &quot;Pacote do CJ&quot; (torso, legs, feet, head…). Para virar outro personagem, use um mod como o Skin Selector (CLEO)."/>
+                        </Border>
+
+                        <TextBlock Margin="0,16,0,6" Text="Modo de instalação"/>
+                        <ComboBox ItemsSource="{Binding Modes}" SelectedItem="{Binding SelectedMode}" DisplayMemberPath="Label" Width="320" HorizontalAlignment="Left"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                            <Button Content="Trocar por esta skin" Style="{StaticResource Primary}" Command="{Binding ApplyCommand}" Padding="18,8"/>
+                            <Button Content="Desfazer troca" Command="{Binding RevertSelectedCommand}" Padding="18,8"/>
+                        </StackPanel>
+                        <TextBlock Margin="0,4,0,0" Foreground="{StaticResource Accent}" FontSize="12"
+                                   Text="{Binding SelectedSwap.SkinName, StringFormat=Troca ativa: {0}}"/>
+                    </StackPanel>
+
+                    <!-- Trocas ativas -->
+                    <DockPanel Margin="0,18,0,0">
+                        <DockPanel DockPanel.Dock="Top">
+                            <Button DockPanel.Dock="Right" Content="Restaurar tudo" Command="{Binding RevertAllCommand}" Margin="0"/>
+                            <TextBlock Text="Trocas ativas" Style="{StaticResource H2}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                        <ListBox ItemsSource="{Binding ActiveSwaps}" Margin="0,6,0,0" Background="Transparent" BorderThickness="0">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Content="Desfazer" Margin="0" Padding="10,3"
+                                                Command="{Binding DataContext.RevertCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"/>
+                                        <TextBlock VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                                            <Run Text="{Binding TargetName, Mode=OneWay}" FontWeight="SemiBold"/>
+                                            <Run Text=" → " Foreground="{StaticResource Accent}"/>
+                                            <Run Text="{Binding SkinName, Mode=OneWay}"/>
+                                            <Run Text="{Binding Mode, Mode=OneWay, StringFormat=  ({0})}" Foreground="{StaticResource FgDim}"/>
+                                        </TextBlock>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- Biblioteca -->
+            <DockPanel Grid.Column="2">
+                <TextBlock DockPanel.Dock="Top" Text="Biblioteca de skins" Style="{StaticResource H2}"/>
+                <WrapPanel DockPanel.Dock="Top">
+                    <Button Content="+ Arquivos/.zip" Command="{Binding ImportFilesCommand}"/>
+                    <Button Content="+ Pasta" Command="{Binding ImportFolderCommand}"/>
+                    <Button Content="+ Pacote do CJ" Command="{Binding ImportCjPackCommand}"/>
+                </WrapPanel>
+                <DockPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+                    <Button DockPanel.Dock="Right" Content="Remover" Command="{Binding RemoveSkinCommand}" Margin="0"/>
+                    <TextBlock Text="Arraste .dff, .txd, pastas ou .zip para cá" Style="{StaticResource Dim}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                </DockPanel>
+                <ListBox x:Name="SkinList" ItemsSource="{Binding Skins}" SelectedItem="{Binding SelectedSkin}"
+                         AllowDrop="True" Drop="SkinList_Drop" DragOver="SkinList_DragOver">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel>
+                                <Border DockPanel.Dock="Left" Width="48" Height="48" CornerRadius="4" Background="{StaticResource PanelAlt}" Margin="0,0,10,0" ClipToBounds="True">
+                                    <Image Source="{Binding Thumb}" Stretch="UniformToFill"/>
+                                </Border>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{Binding Subtitle}" Style="{StaticResource Dim}" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Grid>
+
+        <!-- Barra de status -->
+        <Border Grid.Row="2" Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="16,6">
+            <TextBlock Text="{Binding Status}" Style="{StaticResource Dim}" TextTrimming="CharacterEllipsis"/>
+        </Border>
+
+        <!-- Overlay de carregamento -->
+        <Grid Grid.RowSpan="3" Background="#CC101114" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
+            <Border Width="460" Padding="24" CornerRadius="10" Background="{StaticResource Panel}" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="Carregando personagens…" FontSize="16" FontWeight="SemiBold"/>
+                    <ProgressBar Value="{Binding Progress}" Maximum="1" Margin="0,12,0,8"/>
+                    <TextBlock Text="{Binding BusyText}" Style="{StaticResource Dim}"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

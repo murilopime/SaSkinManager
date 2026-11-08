@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>SaSkinManager.App</RootNamespace>
+    <AssemblyName>SaSkinManager</AssemblyName>
+    <Version>0.1.0</Version>
+    <Product>SA Skin Manager</Product>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SaSkinManager.Core\SaSkinManager.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+  </ItemGroup>
+
+</Project>

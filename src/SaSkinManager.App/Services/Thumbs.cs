@@ -9,7 +9,7 @@ namespace SaSkinManager.App.Services;
 /// <summary>Converte texturas decodificadas em PNG e carrega miniaturas do disco.</summary>
 public static class Thumbs
 {
-    public static void Save(DecodedTexture tex, string path, int max = 160)
+    public static void Save(DecodedTexture tex, string path, int max = 256)
     {
         var src = BitmapSource.Create(tex.Width, tex.Height, 96, 96, PixelFormats.Bgra32, null, tex.Bgra, tex.Width * 4);
         double s = Math.Min(1.0, (double)max / Math.Max(tex.Width, tex.Height));
@@ -51,7 +51,7 @@ public static class Thumbs
         {
             try
             {
-                var t = TxdReader.DecodeLargest(lib.ReadFile(skin, f));
+                var t = TxdReader.DecodeBest(lib.ReadFile(skin, f));
                 if (t is not null && (best is null || t.Width * t.Height > best.Width * best.Height)) best = t;
             }
             catch (IOException) { }

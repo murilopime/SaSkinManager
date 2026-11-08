@@ -131,6 +131,11 @@ internal static class Fake
             ("lamppost.dff", PedDff(skinned: false)), ("lamppost.txd", Txd8888("lamppost", 8, 8, 80, 80, 80)),
             ("semtxd.dff", PedDff(skinned: true)),
         });
+        // modelos das cutscenes ficam num IMG separado
+        ImgArchive.Create(System.IO.Path.Combine(root, "models", "cutscene.img"), new[]
+        {
+            ("cssweet.dff", PedDff(skinned: true)), ("cssweet.txd", Txd8888("cssweet", 8, 8, 0, 120, 0)),
+        });
         ImgArchive.Create(System.IO.Path.Combine(root, "models", "player.img"), new[]
         {
             ("torso.dff", Dff(4000, 10)), ("torso.txd", Txd8888("torso", 8, 8, 255, 255, 255)),

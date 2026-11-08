@@ -44,6 +44,18 @@ public sealed class AppSettings
     public string? GamePath { get; set; }
     public SwapMode PreferredMode { get; set; } = SwapMode.Auto;
 
+    /// <summary>"auto" (segue o Windows), "pt" ou "en".</summary>
+    public string Language { get; set; } = L.Auto;
+
+    /// <summary>Personagens em grade (true) ou lista (false).</summary>
+    public bool GridView { get; set; } = true;
+
+    /// <summary>Lado das miniaturas na grade, em pixels.</summary>
+    public int ThumbSize { get; set; } = 112;
+
+    /// <summary>Fecha o programa depois de clicar em Jogar.</summary>
+    public bool CloseOnPlay { get; set; }
+
     public static AppSettings Load(AppPaths paths)
     {
         try

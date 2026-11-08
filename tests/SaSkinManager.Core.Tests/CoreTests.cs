@@ -161,6 +161,17 @@ public class SwapTests
     }
 
     [Fact]
+    public void Rename_skin_is_kept_after_reopening_library()
+    {
+        using var t = new TempDir();
+        var paths = new AppPaths(t.Combine("appdata"));
+        var lib = new SkinLibrary(paths);
+        var skin = lib.Import(new[] { WriteSkin(t, "niko", 5) }, false).Imported.Single();
+        lib.Rename(skin, "Niko Bellic (GTA IV)");
+        Assert.Equal("Niko Bellic (GTA IV)", new SkinLibrary(paths).Skins.Single().Name);
+    }
+
+    [Fact]
     public void Import_pairs_folder_and_zip()
     {
         using var t = new TempDir();
@@ -278,6 +289,14 @@ public class SwapTests
         var models = scanner.Scan((tex, path) => thumbs.Add(Path.GetFileName(path)), null);
         Assert.Contains("ballas1.png", thumbs);
         Assert.Equal(models.Count, scanner.TryLoadCache()!.Count);
+
+        // versão de cutscene vem do cutscene.img, com miniatura, e fica ligada ao Sweet
+        var cs = models.Single(m => m.ModelName == "cssweet");
+        Assert.Equal("cutscene.img", cs.ImgName);
+        Assert.Equal("cutscene.img", scanner.TryLoadCache()!.Single(m => m.ModelName == "cssweet").ImgName);
+        Assert.Contains("cssweet.png", thumbs);
+        var sweet = models.Single(m => m.ModelName == "sweet");
+        Assert.Contains(PedCatalog.LinkedModels(sweet, models), m => m.ModelName == "cssweet");
     }
 
     /// <summary>Gera uma pasta de jogo falsa para testar a interface: defina DEMO_GAME_DIR e rode só este teste.</summary>

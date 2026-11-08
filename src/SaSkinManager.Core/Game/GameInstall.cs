@@ -14,6 +14,10 @@ public sealed class GameInstall
     public string ModelsDir => Path.Combine(Root, "models");
     public string Gta3ImgPath => Path.Combine(ModelsDir, "gta3.img");
     public string PlayerImgPath => Path.Combine(ModelsDir, "player.img");
+
+    /// <summary>Modelos usados nas cutscenes (cssmoke, cssweet…). Fica fora do gta3.img.</summary>
+    public const string CutsceneImgName = "cutscene.img";
+    public string CutsceneImgPath => Path.Combine(ModelsDir, CutsceneImgName);
     public string PedsIdePath => Path.Combine(Root, "data", "peds.ide");
     public string ModloaderDir => Path.Combine(Root, "modloader");
 
@@ -27,11 +31,11 @@ public sealed class GameInstall
     /// <summary>Valida a pasta. Retorna null se OK, ou a mensagem do que está faltando.</summary>
     public static string? Validate(string? root)
     {
-        if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) return "Pasta não encontrada.";
+        if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) return L.T("Pasta não encontrada.", "Folder not found.");
         var g = new GameInstall(root);
-        if (g.ExePath is null) return "gta_sa.exe não encontrado nesta pasta.";
-        if (!File.Exists(g.Gta3ImgPath)) return "models\\gta3.img não encontrado.";
-        if (!File.Exists(g.PedsIdePath)) return "data\\peds.ide não encontrado.";
+        if (g.ExePath is null) return L.T("gta_sa.exe não encontrado nesta pasta.", "gta_sa.exe not found in this folder.");
+        if (!File.Exists(g.Gta3ImgPath)) return L.T("models\\gta3.img não encontrado.", "models\\gta3.img not found.");
+        if (!File.Exists(g.PedsIdePath)) return L.T("data\\peds.ide não encontrado.", "data\\peds.ide not found.");
         return null;
     }
 
@@ -77,7 +81,7 @@ public sealed class GameInstall
 
     public void Launch()
     {
-        var exe = ExePath ?? throw new FileNotFoundException("Executável do jogo não encontrado.");
+        var exe = ExePath ?? throw new FileNotFoundException(L.T("Executável do jogo não encontrado.", "Game executable not found."));
         Process.Start(new ProcessStartInfo(exe) { WorkingDirectory = Root, UseShellExecute = true });
     }
 }

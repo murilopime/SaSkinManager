@@ -69,12 +69,12 @@ public sealed class ImgArchive : IDisposable
             Span<byte> header = stackalloc byte[HeaderSize];
             fs.ReadExactly(header);
             if (!header[..4].SequenceEqual(Ver2))
-                throw new NotSupportedException(
-                    $"'{System.IO.Path.GetFileName(path)}' não é um IMG versão 2 (GTA San Andreas PC). " +
-                    "A Definitive Edition e versões mobile usam outro formato.");
+                throw new NotSupportedException(L.T(
+                    $"'{System.IO.Path.GetFileName(path)}' não é um IMG versão 2 (GTA San Andreas PC). A Definitive Edition e versões mobile usam outro formato.",
+                    $"'{System.IO.Path.GetFileName(path)}' is not a version 2 IMG (GTA San Andreas PC). The Definitive Edition and mobile versions use another format."));
             uint count = BinaryPrimitives.ReadUInt32LittleEndian(header[4..]);
             if (count > 200_000 || HeaderSize + (long)count * EntrySize > fs.Length)
-                throw new InvalidDataException("Tabela do IMG corrompida.");
+                throw new InvalidDataException(L.T("Tabela do IMG corrompida.", "Corrupted IMG table."));
 
             var table = new byte[count * EntrySize];
             fs.ReadExactly(table);

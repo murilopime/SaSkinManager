@@ -11,7 +11,7 @@ public sealed record ScanProgress(int Done, int Total, string Current);
 /// </summary>
 public sealed class CatalogScanner
 {
-    private const int CacheVersion = 2; // 2: inclui personagens especiais e de cutscene
+    private const int CacheVersion = 4; // 2: especiais e cutscenes; 3: miniaturas maiores; 4: modelos do cutscene.img
 
     private readonly GameInstall _game;
     private readonly string _cacheDir;
@@ -43,9 +43,11 @@ public sealed class CatalogScanner
     private string Fingerprint()
     {
         var b = new FileInfo(_game.PedsIdePath);
-        int count;
+        int count, cuts = 0;
         using (var img = ImgArchive.Open(_game.Gta3ImgPath)) count = img.Entries.Count;
-        return $"{b.Length}:{b.LastWriteTimeUtc.Ticks}|img:{count}";
+        if (File.Exists(_game.CutsceneImgPath))
+            using (var img = ImgArchive.Open(_game.CutsceneImgPath)) cuts = img.Entries.Count;
+        return $"{b.Length}:{b.LastWriteTimeUtc.Ticks}|img:{count}|cuts:{cuts}";
     }
 
     /// <summary>Catálogo do cache, ou null se não houver cache válido.</summary>
@@ -73,6 +75,17 @@ public sealed class CatalogScanner
         var models = PedCatalog.FromIdeFile(_game.PedsIdePath);
         using var img = ImgArchive.Open(_game.Gta3ImgPath);
         models.AddRange(PedCatalog.FindSpecials(img, models, progress, ct));
+
+        // as versões de cutscene ficam num IMG separado (models\cutscene.img)
+        ImgArchive? cutImg = null;
+        if (File.Exists(_game.CutsceneImgPath))
+        {
+            try { cutImg = ImgArchive.Open(_game.CutsceneImgPath); }
+            catch (Exception e) when (e is IOException or InvalidDataException or NotSupportedException) { }
+        }
+        using var cutImgScope = cutImg;
+        if (cutImg is not null)
+            models.AddRange(PedCatalog.FindSpecials(cutImg, models, progress, ct, GameInstall.CutsceneImgName));
         if (saveThumb is not null)
         {
             for (int i = 0; i < models.Count; i++)
@@ -83,8 +96,9 @@ public sealed class CatalogScanner
                 if (m.Kind != ModelKind.Ped) continue;
                 try
                 {
-                    var txd = img.TryRead(m.TxdName + ".txd");
-                    var tex = txd is null ? null : TxdReader.DecodeLargest(txd);
+                    var source = m.ImgName == GameInstall.CutsceneImgName ? cutImg : img;
+                    var txd = source?.TryRead(m.TxdName + ".txd");
+                    var tex = txd is null ? null : TxdReader.DecodeBest(txd);
                     if (tex is not null) saveThumb(tex, ThumbPath(m));
                 }
                 catch (Exception e) when (e is IOException or InvalidDataException or NotSupportedException) { }

@@ -18,6 +18,13 @@ public sealed class SwapRecord
     /// <summary>Modo modloader: pasta onde os arquivos foram gravados.</summary>
     public string? ModloaderDir { get; init; }
     public DateTime AppliedAt { get; init; }
+
+    /// <summary>
+    /// Personagem principal da troca. As versões de cutscene/variações trocadas junto apontam para ele,
+    /// para a lista de trocas ativas mostrar tudo numa linha só. Null em trocas antigas = a própria troca.
+    /// </summary>
+    public string? GroupKey { get; init; }
+    public string? GroupName { get; init; }
 }
 
 /// <summary>Lista de trocas ativas de uma instalação, salva em JSON.</summary>

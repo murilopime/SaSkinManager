@@ -19,6 +19,7 @@ public partial class App : Application
         try
         {
             Settings = AppSettings.Load(Paths);
+            L.Set(Settings.Language);
             if (GameInstall.Validate(Settings.GamePath) is not null)
             {
                 if (!RunSetup()) { Shutdown(); return; }
@@ -28,8 +29,9 @@ public partial class App : Application
         catch (Exception ex)
         {
             LogError(ex);
-            MessageBox.Show("Não foi possível abrir o programa:\n" + ex.Message + "\n\nDetalhes em: " + ErrorLogPath,
-                "SA Skin Manager — erro", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(L.T("Não foi possível abrir o programa:\n", "The program could not start:\n") + ex.Message +
+                L.T("\n\nDetalhes em: ", "\n\nDetails in: ") + ErrorLogPath,
+                L.T("SA Skin Manager — erro", "SA Skin Manager — error"), MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown(1);
         }
     }
@@ -37,11 +39,37 @@ public partial class App : Application
     /// <summary>Tela de primeira execução: escolher a pasta e (opcionalmente) escanear todos os NPCs.</summary>
     public static bool RunSetup()
     {
-        var w = new FirstRunWindow(Settings.GamePath);
-        if (w.ShowDialog() != true) return false;
-        Settings.GamePath = w.SelectedPath;
-        Settings.Save(Paths);
-        return true;
+        string? typedPath = Settings.GamePath;
+        while (true)
+        {
+            var w = new FirstRunWindow(typedPath);
+            var ok = w.ShowDialog() == true;
+            if (w.LanguageChanged)
+            {
+                // reabre a tela no novo idioma, mantendo o caminho digitado
+                typedPath = w.TypedPath;
+                continue;
+            }
+            if (!ok) return false;
+            Settings.GamePath = w.SelectedPath;
+            Settings.Save(Paths);
+            return true;
+        }
+    }
+
+    /// <summary>Recria a janela principal (ex.: depois de trocar o idioma).</summary>
+    public static void ReloadMain(Window current)
+    {
+        _switchingMain = true;
+        try
+        {
+            current.Close();
+            ShowMain();
+        }
+        finally
+        {
+            _switchingMain = false;
+        }
     }
 
     /// <summary>true enquanto a janela principal está sendo trocada (mudança de pasta do jogo).</summary>
@@ -88,7 +116,7 @@ public partial class App : Application
     {
         LogError(e.Exception);
         e.Handled = true;
-        MessageBox.Show(e.Exception.Message + "\n\nDetalhes em: " + ErrorLogPath, "SA Skin Manager — erro",
+        MessageBox.Show(e.Exception.Message + L.T("\n\nDetalhes em: ", "\n\nDetails in: ") + ErrorLogPath, L.T("SA Skin Manager — erro", "SA Skin Manager — error"),
             MessageBoxButton.OK, MessageBoxImage.Error);
         // Se o erro deixou o programa sem nenhuma janela visível, encerra em vez de ficar preso em segundo plano.
         if (!Windows.OfType<Window>().Any(w => w.IsVisible)) Shutdown();

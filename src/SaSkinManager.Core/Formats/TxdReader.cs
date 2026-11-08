@@ -26,6 +26,23 @@ public static class TxdReader
         return best;
     }
 
+    /// <summary>
+    /// Textura para a miniatura: prefere a do rosto/cabeça ("head", "face") quando o modelo tem texturas separadas,
+    /// senão a maior.
+    /// </summary>
+    public static DecodedTexture? DecodeBest(byte[] txd)
+    {
+        DecodedTexture? largest = null, face = null;
+        foreach (var t in DecodeAll(txd))
+        {
+            if (largest is null || t.Width * t.Height > largest.Width * largest.Height) largest = t;
+            var n = t.Name.ToLowerInvariant();
+            if ((n.Contains("head") || n.Contains("face")) && Math.Min(t.Width, t.Height) >= 32
+                && (face is null || t.Width * t.Height > face.Width * face.Height)) face = t;
+        }
+        return face ?? largest;
+    }
+
     public static IEnumerable<DecodedTexture> DecodeAll(byte[] txd)
     {
         if (!RwChunk.TryRead(txd, 0, out var dict) || dict.Type != RwChunk.TexDictionary)

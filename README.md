@@ -17,8 +17,14 @@ com desfazer em um clique.
     `modloader\SaSkinManager\<modelo>\`. Os `.img` originais não são alterados.
   - **IMG direto:** substitui as entradas dentro do `gta3.img`. Antes da primeira alteração ele faz um backup completo
     (`gta3.img.skinmanager.bak`) e guarda o original de cada arquivo trocado para o *Desfazer*.
-- **Trocas ativas:** lista de tudo que foi trocado, com *Desfazer* individual e *Restaurar tudo*.
+- **Cutscenes e variações:** ao trocar um personagem da história (ex.: Big Smoke), o programa troca junto a versão de
+  cutscene (`cssmoke`, do `models\cutscene.img`) e as variações de missão (`smokev`…). Dá para desmarcar as que não quiser.
+- **Trocas ativas:** agrupadas por personagem, com *Desfazer tudo*, a lista dos modelos de cada troca e *Restaurar tudo*.
+- **Renomear skins** da biblioteca: botão *Renomear*, `F2`, clique duplo ou botão direito.
 - **Jogar:** abre o `gta_sa.exe`.
+- **Grade ou lista:** os personagens aparecem em grade de miniaturas (ou lista compacta). Atalhos: `Ctrl+F` busca, `Enter` troca.
+- **Configurações:** idioma (português / English), modo de instalação padrão, grade ou lista, tamanho das miniaturas,
+  trocar a pasta do jogo e limpar o cache.
 
 ### CJ
 

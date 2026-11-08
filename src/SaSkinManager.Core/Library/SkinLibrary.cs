@@ -105,7 +105,7 @@ public sealed class SkinLibrary
         files = files.Where(f =>
         {
             bool ok = f.Name.EndsWith(".dff", StringComparison.OrdinalIgnoreCase) ? RwChunk.IsDff(f.Data) : RwChunk.IsTxd(f.Data);
-            if (!ok) warnings.Add($"{f.Name}: não parece um arquivo RenderWare válido, ignorado.");
+            if (!ok) warnings.Add(L.T($"{f.Name}: não parece um arquivo RenderWare válido, ignorado.", $"{f.Name}: not a valid RenderWare file, skipped."));
             return ok;
         }).ToList();
 
@@ -115,13 +115,13 @@ public sealed class SkinLibrary
         var imported = new List<LibrarySkin>();
         if (files.Count == 0)
         {
-            warnings.Add("Nenhum arquivo .dff/.txd encontrado.");
+            warnings.Add(L.T("Nenhum arquivo .dff/.txd encontrado.", "No .dff/.txd files found."));
             return new ImportResult(imported, warnings);
         }
 
         if (asCjPack)
         {
-            imported.Add(Save(sourceName ?? "Pacote CJ", SkinKind.CjPack, files, sourceName ?? ""));
+            imported.Add(Save(sourceName ?? L.T("Pacote CJ", "CJ pack"), SkinKind.CjPack, files, sourceName ?? ""));
             return new ImportResult(imported, warnings);
         }
 
@@ -136,7 +136,7 @@ public sealed class SkinLibrary
             if (txd.Name is null && dffs.Count == 1 && txds.Count == 1) txd = txds[0];
             if (txd.Name is null)
             {
-                warnings.Add($"{dff.Name}: sem .txd correspondente, ignorado.");
+                warnings.Add(L.T($"{dff.Name}: sem .txd correspondente, ignorado.", $"{dff.Name}: no matching .txd, skipped."));
                 continue;
             }
             usedTxd.Add(txd.Name);
@@ -144,9 +144,9 @@ public sealed class SkinLibrary
             imported.Add(Save(name, SkinKind.Ped, new() { dff, txd }, sourceName ?? ""));
         }
         foreach (var t in txds.Where(t => !usedTxd.Contains(t.Name)))
-            warnings.Add($"{t.Name}: sem .dff correspondente, ignorado.");
+            warnings.Add(L.T($"{t.Name}: sem .dff correspondente, ignorado.", $"{t.Name}: no matching .dff, skipped."));
         if (dffs.Count > 1 && imported.Count < dffs.Count)
-            warnings.Add("Dica: se for um pacote de roupas do CJ, use \"Importar pacote do CJ\".");
+            warnings.Add(L.T("Dica: se for um pacote de roupas do CJ, use \"Pacote do CJ\".", "Tip: if this is a CJ clothes pack, use \"CJ pack\"."));
 
         return new ImportResult(imported, warnings);
     }

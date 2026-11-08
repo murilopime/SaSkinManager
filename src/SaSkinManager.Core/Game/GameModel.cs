@@ -21,8 +21,11 @@ public sealed class GameModel
     public string Description { get; init; } = "";
     public string PedType { get; init; } = "";
 
+    /// <summary>IMG de origem quando não é o padrão (ex.: "cutscene.img" para os modelos das cenas).</summary>
+    public string? SourceImg { get; init; }
+
     /// <summary>IMG onde ficam os arquivos originais.</summary>
-    public string ImgName => Kind == ModelKind.Player ? "player.img" : "gta3.img";
+    public string ImgName => SourceImg ?? (Kind == ModelKind.Player ? "player.img" : "gta3.img");
 
     public string Key => $"{Kind}:{ModelName}".ToLowerInvariant();
 

@@ -9,7 +9,7 @@ public static class PedCatalog
 {
     public const string CjCategory = "Jogador (CJ)";
 
-    private sealed record NameInfo(string? Name, string? Category);
+    private sealed record NameInfo(string? Name, string? En, string? Category);
 
     private static readonly Lazy<Dictionary<string, NameInfo>> Names = new(LoadNames);
 
@@ -74,7 +74,7 @@ public static class PedCatalog
     /// e as versões de cutscene. Detectados pelo esqueleto no .dff dentro do gta3.img.
     /// </summary>
     public static List<GameModel> FindSpecials(ImgArchive img, IEnumerable<GameModel> known,
-        IProgress<ScanProgress>? progress = null, CancellationToken ct = default)
+        IProgress<ScanProgress>? progress = null, CancellationToken ct = default, string? imgName = null)
     {
         var knownNames = new HashSet<string>(known.Select(m => m.ModelName), StringComparer.OrdinalIgnoreCase) { "player" };
         var dffs = img.Entries
@@ -89,17 +89,51 @@ public static class PedCatalog
             ct.ThrowIfCancellationRequested();
             var e = dffs[i];
             var name = Path.GetFileNameWithoutExtension(e.Name);
-            if (i % 50 == 0) progress?.Report(new ScanProgress(i, dffs.Count, "procurando especiais: " + name));
+            if (i % 50 == 0) progress?.Report(new ScanProgress(i, dffs.Count, L.T("procurando especiais: ", "looking for specials: ") + name));
             bool skinned;
             try { skinned = DffInfo.IsSkinned(img.ReadPrefix(e, DffInfo.PrefixBytes)); }
             catch (IOException) { continue; }
             if (!skinned) continue;
-            found.Add(Special(name));
+            found.Add(Special(name, imgName));
         }
         return found.OrderBy(m => m.Category).ThenBy(m => m.DisplayName, StringComparer.OrdinalIgnoreCase).ToList();
     }
 
-    internal static GameModel Special(string name)
+    private const string StoryCategory = "História";
+
+    private static bool IsStoryLike(GameModel m) =>
+        m.Kind == ModelKind.Ped && (m.Category is StoryCategory or SpecialCategory or CutsceneCategory);
+
+    /// <summary>Nome sem o prefixo "cs" das versões de cutscene.</summary>
+    private static string BaseName(GameModel m)
+    {
+        var n = m.ModelName.ToLowerInvariant();
+        return m.Category == CutsceneCategory && n.StartsWith("cs") && n.Length > 2 ? n[2..] : n;
+    }
+
+    /// <summary>
+    /// Outros modelos do mesmo personagem da história: a versão de cutscene (ex.: smoke → cssmoke)
+    /// e variações de missão (ex.: ryder → ryder2, ryder3). Assim a troca vale no jogo e nas cenas.
+    /// Só personagens da história/especiais, para não ligar pedestres genéricos por engano.
+    /// </summary>
+    public static List<GameModel> LinkedModels(GameModel target, IEnumerable<GameModel> catalog)
+    {
+        if (!IsStoryLike(target)) return new();
+        var name = BaseName(target);
+        if (name.Length < 4) return new();
+        return catalog
+            .Where(m => IsStoryLike(m) && m.Key != target.Key)
+            .Where(m =>
+            {
+                var other = BaseName(m);
+                return other.Length >= 4 && (other.StartsWith(name) || name.StartsWith(other));
+            })
+            .OrderBy(m => m.Category == CutsceneCategory ? 0 : 1)
+            .ThenBy(m => m.ModelName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    internal static GameModel Special(string name, string? imgName = null)
     {
         var lower = name.ToLowerInvariant();
         bool cutscene = lower.StartsWith("cs") && lower.Length > 2;
@@ -116,10 +150,58 @@ public static class PedCatalog
             TxdName = name,
             Kind = ModelKind.Ped,
             PedType = "SPECIAL",
+            SourceImg = imgName,
             Category = cutscene ? CutsceneCategory : SpecialCategory,
             DisplayName = display,
             Description = cutscene ? "Modelo usado nas cenas da história" : "Personagem especial de missão (não está no peds.ide)",
         };
+    }
+
+    private static readonly Dictionary<string, string> CategoryEn = new()
+    {
+        [CjCategory] = "Player (CJ)",
+        [SpecialCategory] = "Missions / Specials",
+        [CutsceneCategory] = "Cutscenes",
+        ["História"] = "Story",
+        ["Tríades"] = "Triads",
+        ["Máfia"] = "Mafia",
+        ["Polícia / Militar"] = "Police / Military",
+        ["Serviços (médicos, bombeiros)"] = "Services (medics, firefighters)",
+        ["Traficantes"] = "Dealers",
+        ["Prostitutas"] = "Prostitutes",
+        ["Criminosos"] = "Criminals",
+        ["Pedestres (mulheres)"] = "Pedestrians (women)",
+        ["Pedestres (homens)"] = "Pedestrians (men)",
+        ["Gangues"] = "Gangs",
+        ["Outros"] = "Other",
+    };
+
+    /// <summary>Nome da categoria no idioma atual (no catálogo/cache ela fica sempre em português).</summary>
+    public static string CategoryLabel(string category) =>
+        L.IsEnglish && CategoryEn.TryGetValue(category, out var en) ? en : category;
+
+    /// <summary>Nome amigável no idioma atual.</summary>
+    public static string DisplayNameFor(GameModel m)
+    {
+        if (m.Kind == ModelKind.Player) return m.DisplayName;
+        var lower = m.ModelName.ToLowerInvariant();
+        if (Names.Value.TryGetValue(lower, out var info) && info.Name is not null)
+            return L.IsEnglish ? info.En ?? info.Name : info.Name;
+        if (m.Id < 0 && lower.StartsWith("cs") && lower.Length > 2 && Names.Value.TryGetValue(lower[2..], out info) && info.Name is not null)
+            return (L.IsEnglish ? info.En ?? info.Name : info.Name) + " (cutscene)";
+        return m.DisplayName;
+    }
+
+    /// <summary>Descrição no idioma atual.</summary>
+    public static string DescriptionFor(GameModel m)
+    {
+        if (m.Kind == ModelKind.Player)
+            return L.T("Protagonista. O corpo é montado por peças de roupa do player.img.", "Protagonist. The body is built from player.img clothing parts.");
+        if (m.Id < 0)
+            return m.Category == CutsceneCategory
+                ? L.T("Modelo usado nas cenas da história", "Model used in story cutscenes")
+                : L.T("Personagem especial de missão (não está no peds.ide)", "Special mission character (not in peds.ide)");
+        return Describe(m.ModelName, m.PedType);
     }
 
     internal static string CategoryFor(string model, string pedType)
@@ -159,6 +241,12 @@ public static class PedCatalog
         if (m.Length >= 4 && "bwho".Contains(m[0]) && "mf".Contains(m[1]) && "ymo".Contains(m[2]))
         {
             bool female = m[1] == 'f';
+            if (L.IsEnglish)
+            {
+                string raceEn = m[0] switch { 'b' => "Black", 'w' => "White", 'h' => "Hispanic", _ => "Asian" };
+                string ageEn = m[2] switch { 'y' => "young", 'm' => "adult", _ => "old" };
+                return $"{raceEn} {ageEn} {(female ? "woman" : "man")} · {m[3..]}";
+            }
             string race = m[0] switch
             {
                 'b' => female ? "negra" : "negro",
@@ -170,6 +258,6 @@ public static class PedCatalog
             string who = female ? "Mulher" : "Homem";
             return $"{who} {age} {race} · {m[3..]}";
         }
-        return pedType.Length > 0 ? $"Tipo: {pedType}" : "";
+        return pedType.Length > 0 ? L.T($"Tipo: {pedType}", $"Type: {pedType}") : "";
     }
 }

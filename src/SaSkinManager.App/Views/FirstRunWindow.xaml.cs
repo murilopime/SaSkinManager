@@ -2,17 +2,35 @@ using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
 using SaSkinManager.App.Services;
+using SaSkinManager.Core;
 using SaSkinManager.Core.Game;
 
 namespace SaSkinManager.App.Views;
 
 public partial class FirstRunWindow : Window
 {
+    private sealed record LangOption(string Value, string Label)
+    {
+        public override string ToString() => Label;
+    }
+
     public string? SelectedPath { get; private set; }
+
+    /// <summary>true se o usuário trocou o idioma: a tela é reaberta já traduzida.</summary>
+    public bool LanguageChanged { get; private set; }
+    public string TypedPath => PathBox.Text.Trim();
+
+    private readonly bool _ready;
 
     public FirstRunWindow(string? currentPath)
     {
         InitializeComponent();
+        DarkTitleBar.Attach(this);
+
+        var langs = new List<LangOption> { new(L.Portuguese, "Português (Brasil)"), new(L.English, "English") };
+        LanguageBox.ItemsSource = langs;
+        LanguageBox.SelectedItem = langs.First(l => l.Value == L.Lang);
+
         Loaded += async (_, _) =>
         {
             var found = await Task.Run(() => GameInstall.GuessLocations().ToList());
@@ -24,11 +42,22 @@ public partial class FirstRunWindow : Window
             }
         };
         PathBox.Text = currentPath ?? "";
+        _ready = true;
+    }
+
+    private void Language_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_ready || LanguageBox.SelectedItem is not LangOption o || o.Value == L.Lang) return;
+        App.Settings.Language = o.Value;
+        App.Settings.Save(App.Paths);
+        L.Set(o.Value);
+        LanguageChanged = true;
+        DialogResult = false;
     }
 
     private void Browse_Click(object sender, RoutedEventArgs e)
     {
-        var dlg = new OpenFolderDialog { Title = "Pasta do GTA San Andreas (onde está o gta_sa.exe)" };
+        var dlg = new OpenFolderDialog { Title = L.T("Pasta do GTA San Andreas (onde está o gta_sa.exe)", "GTA San Andreas folder (where gta_sa.exe is)") };
         if (dlg.ShowDialog(this) == true) PathBox.Text = dlg.FolderName;
     }
 
@@ -47,7 +76,9 @@ public partial class FirstRunWindow : Window
         if (err is null)
         {
             var g = GameInstall.Open(PathBox.Text.Trim());
-            ValidationText.Text = "✔ GTA San Andreas encontrado" + (g.HasModloader ? " · Mod Loader instalado" : " · sem Mod Loader (as trocas editam o gta3.img com backup)");
+            ValidationText.Text = L.T("✔ GTA San Andreas encontrado", "✔ GTA San Andreas found") + (g.HasModloader
+                ? L.T(" · Mod Loader instalado", " · Mod Loader installed")
+                : L.T(" · sem Mod Loader (as trocas editam o gta3.img com backup)", " · no Mod Loader (swaps edit gta3.img with a backup)"));
             ValidationText.Foreground = (System.Windows.Media.Brush)FindResource("Accent");
         }
         else
@@ -67,11 +98,14 @@ public partial class FirstRunWindow : Window
 
         SetupPanel.Visibility = Visibility.Collapsed;
         ScanPanel.Visibility = Visibility.Visible;
+        LanguageBox.IsEnabled = false;
 
         var progress = new Progress<ScanProgress>(p =>
         {
             Progress.Value = p.Total == 0 ? 0 : (double)p.Done / p.Total;
-            ProgressText.Text = p.Current.Length > 0 ? $"{p.Done} de {p.Total} · {p.Current}" : $"{p.Total} personagens carregados";
+            ProgressText.Text = p.Current.Length > 0
+                ? L.T($"{p.Done} de {p.Total} · {p.Current}", $"{p.Done} of {p.Total} · {p.Current}")
+                : L.T($"{p.Total} personagens carregados", $"{p.Total} characters loaded");
         });
         try
         {
@@ -83,9 +117,11 @@ public partial class FirstRunWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, "Não foi possível ler o jogo:\n" + ex.Message, "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(this, L.T("Não foi possível ler o jogo:\n", "Could not read the game:\n") + ex.Message,
+                L.T("Erro", "Error"), MessageBoxButton.OK, MessageBoxImage.Error);
             ScanPanel.Visibility = Visibility.Collapsed;
             SetupPanel.Visibility = Visibility.Visible;
+            LanguageBox.IsEnabled = true;
         }
     }
 }

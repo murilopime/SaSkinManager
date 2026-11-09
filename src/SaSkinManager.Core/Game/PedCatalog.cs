@@ -69,6 +69,16 @@ public static class PedCatalog
     public const string SpecialCategory = "Missões / Especiais";
     public const string CutsceneCategory = "Cutscenes";
 
+    private static readonly System.Text.RegularExpressions.Regex AdultModel = new(
+        @"^(gangrl|mecgrl|copgrl|nurgrl|crogrl|gungrl)[12]$",
+        System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
+    /// <summary>
+    /// Versões 1 e 2 das namoradas do CJ (conteúdo "Hot Coffee": roupa íntima / sem roupa).
+    /// A versão 3 é a normal do jogo e não conta. Ficam escondidas fora do modo 18+.
+    /// </summary>
+    public static bool IsAdult(GameModel m) => AdultModel.IsMatch(m.ModelName);
+
     /// <summary>
     /// Personagens que não estão no peds.ide: os "especiais" de missão (carregados por nome pelo script)
     /// e as versões de cutscene. Detectados pelo esqueleto no .dff dentro do gta3.img.

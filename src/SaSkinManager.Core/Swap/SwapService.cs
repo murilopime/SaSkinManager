@@ -163,6 +163,20 @@ public sealed class SwapService
         foreach (var r in Manifest.Records.ToList()) Revert(r);
     }
 
+    /// <summary>
+    /// Arquivo original do jogo (antes das trocas): no modo IMG vem do backup da entrada,
+    /// senão do próprio .img. Null se não existir.
+    /// </summary>
+    public byte[]? ReadOriginal(GameModel target, string file)
+    {
+        var backup = EntryBackupPath(target.ImgName, file);
+        if (File.Exists(backup)) return File.ReadAllBytes(backup);
+        var imgPath = _game.ImgPath(target.ImgName);
+        if (!File.Exists(imgPath)) return null;
+        using var img = ImgArchive.Open(imgPath);
+        return img.TryRead(file);
+    }
+
     private string EntryBackupPath(string imgName, string entry) =>
         Path.Combine(_backupDir, imgName, entry.ToLowerInvariant());
 

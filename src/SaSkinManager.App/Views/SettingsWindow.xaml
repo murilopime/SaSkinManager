@@ -103,6 +103,20 @@
                   Content="{s:Tr Pt='Mostrar as versões de cutscene na lista de personagens', En='Show cutscene versions in the character list'}"
                   ToolTip="{s:Tr Pt='Elas já são trocadas junto com o personagem. Também dá para vê-las pela categoria Cutscenes.', En='They are already swapped together with the character. You can also see them through the Cutscenes category.'}"/>
 
+        <CheckBox x:Name="Preview3DBox" Margin="0,8,0,0"
+                  Content="{s:Tr Pt='Prévia e miniaturas com o modelo 3D', En='3D model preview and thumbnails'}"
+                  ToolTip="{s:Tr Pt='Desligado, mostra só a textura do personagem (mais leve).', En='When off, only the character texture is shown (lighter).'}"/>
+        <CheckBox x:Name="AutoRotateBox" Margin="0,8,0,0"
+                  Content="{s:Tr Pt='Girar os modelos 3D sozinhos', En='Rotate 3D models automatically'}"
+                  IsEnabled="{Binding IsChecked, ElementName=Preview3DBox}"/>
+        <CheckBox x:Name="SpinGridBox" Margin="0,8,0,0"
+                  Content="{s:Tr Pt='Girar todos os personagens da grade (desligado: só o que está sob o mouse)', En='Rotate every character in the grid (off: only the one under the mouse)'}"
+                  IsEnabled="{Binding IsChecked, ElementName=Preview3DBox}"/>
+
+        <CheckBox x:Name="AdultBox" Margin="0,8,0,0" Checked="AdultBox_Checked"
+                  Content="{s:Tr Pt='Modo 18+ (mostra as versões Hot Coffee das namoradas do CJ)', En='18+ mode (shows the Hot Coffee versions of the girlfriends of CJ)'}"
+                  ToolTip="{s:Tr Pt='Desligado: as versões 1 e 2 das namoradas (gangrl, mecgrl, copgrl, nurgrl, crogrl, gungrl) ficam escondidas. A versão 3, a normal, sempre aparece.', En='Off: girlfriend versions 1 and 2 (gangrl, mecgrl, copgrl, nurgrl, crogrl, gungrl) are hidden. Version 3, the regular one, is always shown.'}"/>
+
         <!-- Jogo -->
         <TextBlock Text="{s:Tr Pt='Jogo', En='Game'}" Style="{StaticResource Section}"/>
         <TextBlock x:Name="GamePathText" Style="{StaticResource Dim}" TextTrimming="CharacterEllipsis" Margin="0,0,0,8"/>

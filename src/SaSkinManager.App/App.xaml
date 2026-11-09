@@ -1,6 +1,7 @@
-﻿<Application x:Class="SaSkinManager.App.App"
+<Application x:Class="SaSkinManager.App.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:svc="clr-namespace:SaSkinManager.App.Services"
              ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
         <SolidColorBrush x:Key="Bg" Color="#16171B"/>
@@ -13,6 +14,35 @@
         <SolidColorBrush x:Key="AccentDim" Color="#4A3418"/>
         <SolidColorBrush x:Key="Danger" Color="#E5534B"/>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <svc:NullToVis x:Key="NullToVis"/>
+
+        <!-- Dicas (tooltip) escuras, legíveis em toda a interface -->
+        <Style TargetType="ToolTip">
+            <Setter Property="Background" Value="#2A2D35"/>
+            <Setter Property="Foreground" Value="#ECEDEF"/>
+            <Setter Property="BorderBrush" Value="#3A3E48"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="9,6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="HasDropShadow" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToolTip">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" CornerRadius="6"
+                                MaxWidth="420">
+                            <ContentPresenter>
+                                <ContentPresenter.Resources>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="TextWrapping" Value="Wrap"/>
+                                    </Style>
+                                </ContentPresenter.Resources>
+                            </ContentPresenter>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
         <Style TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource Fg}"/>

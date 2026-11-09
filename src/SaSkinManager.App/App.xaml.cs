@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Threading;
 using SaSkinManager.App.Views;
 using SaSkinManager.Core;
@@ -79,7 +79,9 @@ public partial class App : Application
     public static void ShowMain()
     {
         var game = GameInstall.Open(Settings.GamePath!);
+        Trace("ShowMain: new MainWindow");
         var main = new MainWindow(game);
+        Trace("ShowMain: Show");
         Current.MainWindow = main;
         // Fechar a janela principal sempre encerra o programa (evita processo invisível preso em segundo plano).
         main.Closed += (_, _) =>
@@ -87,6 +89,7 @@ public partial class App : Application
             if (!_switchingMain) Current.Shutdown();
         };
         main.Show();
+        Trace("ShowMain: shown");
     }
 
     /// <summary>Trocar a pasta do jogo: volta para a tela de configuração e reabre a janela principal.</summary>
@@ -121,6 +124,13 @@ public partial class App : Application
             MessageBoxButton.OK, MessageBoxImage.Error);
         // Se o erro deixou o programa sem nenhuma janela visível, encerra em vez de ficar preso em segundo plano.
         if (!Windows.OfType<Window>().Any(w => w.IsVisible)) Shutdown();
+    }
+
+    public static void Trace(string msg)
+    {
+        if (Environment.GetEnvironmentVariable("SASKINMANAGER_TRACE") != "1") return;
+        try { System.IO.File.AppendAllText(System.IO.Path.Combine(Paths.Root, "trace.log"), $"{DateTime.Now:HH:mm:ss.fff} [{Environment.CurrentManagedThreadId}] {msg}" + Environment.NewLine); }
+        catch (System.IO.IOException) { }
     }
 
     public static string ErrorLogPath => System.IO.Path.Combine(Paths.Root, "erro.log");

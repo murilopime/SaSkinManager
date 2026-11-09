@@ -18,6 +18,9 @@ com desfazer em um clique.
 - **Biblioteca de skins:** importe arquivos `.dff` + `.txd`, uma pasta ou um `.zip` (ou arraste para a lista).
   Dá para buscar, ordenar (recentes, nome, mais usadas), renomear (`F2`, clique duplo ou botão direito) e ver em quantos
   personagens cada skin está em uso. O menu **⋯** exporta a biblioteca inteira num `.zip` de backup e restaura depois.
+- **Prévia 3D:** o personagem original e a nova skin aparecem lado a lado em 3D, girando juntos.
+  Arraste para girar, use a roda do mouse para o zoom e clique duas vezes para voltar. A grade de personagens usa
+  miniaturas 3D e os personagens na tela ficam girando (ou só o que está sob o mouse, nas configurações).
 - **Trocar:** selecione o personagem à esquerda, a skin à direita e clique em *Trocar por esta skin*.
   Com `Ctrl`/`Shift` dá para selecionar vários personagens e aplicar a mesma skin em todos.
 - **Cutscenes e variações:** ao trocar um personagem da história (ex.: Big Smoke), o programa troca junto a versão de
@@ -31,7 +34,7 @@ com desfazer em um clique.
 - **Filtros:** *Todos*, *Trocados*, *Não trocados* e *★ Favoritos* (marque com a estrela).
 - **Atalhos:** `Ctrl+F` busca, `Enter` troca, `Ctrl+Z` desfaz a última troca.
 - **Configurações:** idioma (português / English), cor de destaque (laranja, verde, amarelo, roxo, azul, rosa),
-  modo de instalação padrão, grade ou lista, tamanho das miniaturas, mostrar as cutscenes na lista,
+  modo de instalação padrão, grade ou lista, tamanho das miniaturas, mostrar as cutscenes na lista, prévia 3D e giro,
   trocar a pasta do jogo e limpar o cache.
 
 ### CJ
@@ -71,13 +74,13 @@ dotnet publish src/SaSkinManager.App -c Release -r win-x64 --self-contained -p:P
 
 ## Estrutura
 
-- `src/SaSkinManager.Core`: formatos (IMG VER2, IDE, TXD/DXT, DFF), catálogo de personagens, biblioteca e lógica de troca. Sem WPF, testável.
-- `src/SaSkinManager.App`: interface WPF (.NET 8).
+- `src/SaSkinManager.Core`: formatos (IMG VER2, IDE, TXD/DXT, geometria DFF), catálogo de personagens, biblioteca e lógica de troca. Sem WPF, testável.
+- `src/SaSkinManager.App`: interface WPF (.NET 8), prévia com o 3D do próprio WPF (sem dependências extras).
 - `tests/SaSkinManager.Core.Tests`: testes xUnit com IMG/TXD sintéticos.
 
 ## Roadmap
 
-- v2: preview 3D do modelo (`.dff` + `.txd`), lado a lado original × nova, grade de modelos girando; perfis de trocas.
+- ~~v2: prévia 3D do modelo, lado a lado original × nova, grade de modelos girando~~ (feito na v0.4.0); perfis de trocas.
 - v3: troca de veículos (carros, motos, barcos, aviões, helicópteros…) via `data/vehicles.ide`.
 
 ## Licença

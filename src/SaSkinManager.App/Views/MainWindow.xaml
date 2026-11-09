@@ -5,8 +5,10 @@
         Title="SA Skin Manager" Width="1360" Height="840" MinWidth="1100" MinHeight="640"
         WindowStartupLocation="CenterScreen" Background="{StaticResource Bg}" Icon="pack://application:,,,/Assets/app.ico">
     <Window.Resources>
-        <!-- Bloco da grade de personagens. Na v2 a imagem vira o modelo 3D girando. -->
+        <!-- Bloco da grade de personagens: com o mouse em cima, o modelo 3D aparece girando. -->
         <Style x:Key="TileItem" TargetType="ListBoxItem">
+            <EventSetter Event="MouseEnter" Handler="Tile_MouseEnter"/>
+            <EventSetter Event="MouseLeave" Handler="Tile_MouseLeave"/>
             <Setter Property="Margin" Value="3"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
@@ -189,7 +191,8 @@
 
                 <Grid>
                     <!-- Grade -->
-                    <ListBox ItemsSource="{Binding PedsView}" SelectedItem="{Binding SelectedPed}" ItemContainerStyle="{StaticResource TileItem}"
+                    <ListBox x:Name="PedGrid" ItemsSource="{Binding PedsView}" SelectedItem="{Binding SelectedPed}" ItemContainerStyle="{StaticResource TileItem}"
+                             ScrollViewer.ScrollChanged="PedGrid_ScrollChanged" IsVisibleChanged="PedGrid_IsVisibleChanged"
                              Visibility="{Binding GridView, Converter={StaticResource BoolToVis}}" Padding="4"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                              SelectionMode="Extended" SelectionChanged="Peds_SelectionChanged">
@@ -209,9 +212,9 @@
                                 <StackPanel Width="{Binding DataContext.ThumbSize, RelativeSource={RelativeSource AncestorType=ListBox}}">
                                     <StackPanel.ToolTip>
                                         <StackPanel>
-                                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Foreground="Black"/>
-                                            <TextBlock Text="{Binding Subtitle}" Foreground="Black"/>
-                                            <TextBlock Text="{Binding SwapText}" Foreground="Black"/>
+                                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding Subtitle}" Foreground="#9AA0AA"/>
+                                            <TextBlock Text="{Binding SwapText}" Foreground="{DynamicResource Accent}"/>
                                         </StackPanel>
                                     </StackPanel.ToolTip>
                                     <Grid Height="{Binding DataContext.ThumbSize, RelativeSource={RelativeSource AncestorType=ListBox}}">
@@ -220,6 +223,9 @@
                                                 <TextBlock Text="{Binding Initial}" HorizontalAlignment="Center" VerticalAlignment="Center"
                                                            Foreground="{StaticResource FgDim}" FontSize="26"/>
                                                 <Image Source="{Binding Thumb}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                <Border Background="{StaticResource Panel}" Visibility="{Binding LiveModel, Converter={StaticResource NullToVis}}">
+                                                    <s:ModelViewer Model="{Binding LiveModel}" Interactive="False" Speed="60"/>
+                                                </Border>
                                             </Grid>
                                         </Border>
                                         <TextBlock Text="★" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5,2,0,0" FontSize="16"
@@ -316,7 +322,7 @@
                             <Run Text="{Binding SelectedPed.Description, Mode=OneWay}"/>
                         </TextBlock>
 
-                        <!-- Área de prévia: na v2 cada quadro vira um visualizador 3D -->
+                        <!-- Prévia 3D: original × nova skin (arrastar gira, roda do mouse aproxima) -->
                         <Grid Margin="0,16,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -325,10 +331,17 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel>
                                 <TextBlock Text="{s:Tr Pt='ORIGINAL', En='ORIGINAL'}" Style="{StaticResource Dim}" Margin="0,0,0,6"/>
-                                <Border Height="230" CornerRadius="6" Background="{StaticResource PanelAlt}" ClipToBounds="True">
+                                <Border Height="300" CornerRadius="6" Background="{StaticResource PanelAlt}" ClipToBounds="True">
                                     <Grid>
-                                        <TextBlock Text="{s:Tr Pt='sem miniatura', En='no thumbnail'}" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource Dim}"/>
-                                        <Image Source="{Binding SelectedPed.Thumb}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                        <TextBlock Text="{s:Tr Pt='sem miniatura', En='no thumbnail'}" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource Dim}"
+                                                   Visibility="{Binding SelectedPed.Thumb, Converter={StaticResource NullToVis}, ConverterParameter=invert}"/>
+                                        <Image Source="{Binding SelectedPed.Thumb}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"
+                                               Visibility="{Binding OriginalModel, Converter={StaticResource NullToVis}, ConverterParameter=invert}"/>
+                                        <s:ModelViewer Model="{Binding OriginalModel}" AutoRotate="{Binding AutoRotate}" SyncGroup="preview"
+                                                       Visibility="{Binding OriginalModel, Converter={StaticResource NullToVis}}"
+                                                       ToolTip="{s:Tr Pt='Arraste para girar · roda do mouse: zoom · clique duplo: voltar', En='Drag to rotate · mouse wheel: zoom · double-click: reset'}"/>
+                                        <TextBlock Text="{s:Tr Pt='carregando 3D…', En='loading 3D…'}" Style="{StaticResource Dim}" FontSize="11" Margin="8,6"
+                                                   HorizontalAlignment="Left" VerticalAlignment="Bottom" Visibility="{Binding LoadingOriginal, Converter={StaticResource BoolToVis}}"/>
                                     </Grid>
                                 </Border>
                                 <TextBlock Text="{Binding SelectedPed.Files}" Style="{StaticResource Dim}" Margin="0,6,0,0" TextTrimming="CharacterEllipsis"/>
@@ -336,11 +349,18 @@
                             <TextBlock Grid.Column="1" Text="→" FontSize="30" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource Accent}"/>
                             <StackPanel Grid.Column="2">
                                 <TextBlock Text="{s:Tr Pt='NOVA SKIN', En='NEW SKIN'}" Style="{StaticResource Dim}" Margin="0,0,0,6"/>
-                                <Border Height="230" CornerRadius="6" Background="{StaticResource PanelAlt}" ClipToBounds="True">
+                                <Border Height="300" CornerRadius="6" Background="{StaticResource PanelAlt}" ClipToBounds="True">
                                     <Grid>
                                         <TextBlock Text="{s:Tr Pt='escolha uma skin na biblioteca →', En='pick a skin in the library →'}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                   Style="{StaticResource Dim}" TextWrapping="Wrap" TextAlignment="Center" Margin="10"/>
-                                        <Image Source="{Binding SelectedSkin.Thumb}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                   Style="{StaticResource Dim}" TextWrapping="Wrap" TextAlignment="Center" Margin="10"
+                                                   Visibility="{Binding SelectedSkin.Thumb, Converter={StaticResource NullToVis}, ConverterParameter=invert, FallbackValue=Visible}"/>
+                                        <Image Source="{Binding SelectedSkin.Thumb}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"
+                                               Visibility="{Binding NewModel, Converter={StaticResource NullToVis}, ConverterParameter=invert}"/>
+                                        <s:ModelViewer Model="{Binding NewModel}" AutoRotate="{Binding AutoRotate}" SyncGroup="preview"
+                                                       Visibility="{Binding NewModel, Converter={StaticResource NullToVis}}"
+                                                       ToolTip="{s:Tr Pt='Arraste para girar · roda do mouse: zoom · clique duplo: voltar', En='Drag to rotate · mouse wheel: zoom · double-click: reset'}"/>
+                                        <TextBlock Text="{s:Tr Pt='carregando 3D…', En='loading 3D…'}" Style="{StaticResource Dim}" FontSize="11" Margin="8,6"
+                                                   HorizontalAlignment="Left" VerticalAlignment="Bottom" Visibility="{Binding LoadingNew, Converter={StaticResource BoolToVis}}"/>
                                     </Grid>
                                 </Border>
                                 <TextBlock Text="{Binding SelectedSkin.Title}" Margin="0,6,0,0" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
@@ -572,7 +592,10 @@
 
         <!-- Barra de status -->
         <Border Grid.Row="2" Background="{StaticResource Panel}" BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="16,6">
-            <TextBlock Text="{Binding Status}" Style="{StaticResource Dim}" TextTrimming="CharacterEllipsis"/>
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Right" Text="{Binding ThumbProgress}" Style="{StaticResource Dim}" Margin="12,0,0,0"/>
+                <TextBlock Text="{Binding Status}" Style="{StaticResource Dim}" TextTrimming="CharacterEllipsis"/>
+            </DockPanel>
         </Border>
 
         <!-- Overlay de carregamento -->

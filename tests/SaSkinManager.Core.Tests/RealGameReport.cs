@@ -39,3 +39,38 @@ public class RealGameReport
         File.WriteAllLines(report, lines);
     }
 }
+
+/// <summary>Diagnóstico da prévia 3D com o jogo de verdade: defina REAL_GAME_DIR e MESH_REPORT_FILE.</summary>
+public class RealGameMeshReport
+{
+    [Fact]
+    public void Write_mesh_report_when_requested()
+    {
+        var root = Environment.GetEnvironmentVariable("REAL_GAME_DIR");
+        var report = Environment.GetEnvironmentVariable("MESH_REPORT_FILE");
+        if (string.IsNullOrEmpty(root) || string.IsNullOrEmpty(report)) return;
+        var models = new CatalogScanner(GameInstall.Open(root), new AppPaths(Path.Combine(Path.GetTempPath(), "saskin-report-data"))).Scan(null, null);
+        var lines = new List<string>();
+        int ok = 0, fail = 0;
+        var imgs = new Dictionary<string, ImgArchive>();
+        foreach (var m in models.Where(m => m.Kind == ModelKind.Ped))
+        {
+            if (!imgs.TryGetValue(m.ImgName, out var img)) imgs[m.ImgName] = img = ImgArchive.Open(Path.Combine(root, "models", m.ImgName));
+            try
+            {
+                var dff = DffMesh.Read(img.TryRead(m.ModelName + ".dff")!);
+                var txd = img.TryRead(m.TxdName + ".txd");
+                var texNames = txd is null ? new HashSet<string>() : TxdReader.DecodeAll(txd).Select(t => t.Name.ToLowerInvariant()).ToHashSet();
+                var parts = dff.Geometries.SelectMany(g => g.Parts).ToList();
+                var missing = parts.Where(p => p.Texture.Length > 0 && !texNames.Contains(p.Texture.ToLowerInvariant())).Select(p => p.Texture).ToList();
+                var (min, max) = dff.Bounds();
+                lines.Add($"{m.ModelName,-14} geo={dff.Geometries.Count} tris={dff.TriangleCount,5} parts={parts.Count} min={min} max={max} missingTex={string.Join(",", missing)}");
+                ok++;
+            }
+            catch (Exception e) { lines.Add($"{m.ModelName,-14} ERRO {e.GetType().Name}: {e.Message}"); fail++; }
+        }
+        foreach (var i in imgs.Values) i.Dispose();
+        lines.Insert(0, $"ok={ok} fail={fail}");
+        File.WriteAllLines(report, lines);
+    }
+}

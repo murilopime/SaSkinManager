@@ -25,9 +25,15 @@ public sealed class CatalogScanner
     }
 
     public string ThumbsDir { get; }
+
+    /// <summary>Muda quando o jeito de renderizar muda, para refazer as miniaturas 3D antigas.</summary>
+    private const string Thumbs3DFolder = "thumbs3d-v2";
     private string CacheFile => Path.Combine(_cacheDir, "catalog.json");
 
     public string ThumbPath(GameModel m) => Path.Combine(ThumbsDir, m.ModelName.ToLowerInvariant() + ".png");
+
+    /// <summary>Miniatura 3D (renderizada pela interface, aos poucos, depois do escaneamento).</summary>
+    public string Thumb3DPath(GameModel m) => Path.Combine(_cacheDir, Thumbs3DFolder, m.ModelName.ToLowerInvariant() + ".png");
 
     private sealed class CacheData
     {
@@ -115,5 +121,8 @@ public sealed class CatalogScanner
     {
         if (File.Exists(CacheFile)) File.Delete(CacheFile);
         foreach (var f in Directory.EnumerateFiles(ThumbsDir, "*.png")) File.Delete(f);
+        var dir3d = Path.Combine(_cacheDir, Thumbs3DFolder);
+        if (Directory.Exists(dir3d))
+            foreach (var f in Directory.EnumerateFiles(dir3d, "*.png")) File.Delete(f);
     }
 }

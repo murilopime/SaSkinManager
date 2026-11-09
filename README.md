@@ -18,6 +18,9 @@ with one-click undo. The program is available in English and Portuguese.
 - **Skin library:** import `.dff` + `.txd` files, a folder or a `.zip` (or drop them on the list).
   You can search, sort (newest, name, most used), rename (`F2`, double-click or right-click) and see how many characters
   use each skin. The **⋯** menu exports the whole library to a backup `.zip` and restores it later.
+- **3D preview:** the original character and the new skin are shown side by side as 3D models, rotating together.
+  Drag to rotate, use the mouse wheel to zoom, double-click to reset. The character grid uses 3D thumbnails and the
+  characters on screen keep rotating (or only the one under the mouse, in Settings).
 - **Swap:** select the character on the left, the skin on the right and click *Swap to this skin*.
   Use `Ctrl`/`Shift` to select several characters and apply the same skin to all of them.
 - **Cutscenes and variants:** when you swap a story character (e.g. Big Smoke), its cutscene version (`cssmoke`) and
@@ -31,7 +34,7 @@ with one-click undo. The program is available in English and Portuguese.
 - **Filters:** *All*, *Swapped*, *Not swapped* and *★ Favorites* (mark them with the star).
 - **Shortcuts:** `Ctrl+F` search, `Enter` swap, `Ctrl+Z` undo the last swap.
 - **Settings:** language (English / Português), accent color (orange, green, yellow, purple, blue, pink),
-  default install mode, grid or list, thumbnail size, show cutscene versions in the list,
+  default install mode, grid or list, thumbnail size, show cutscene versions in the list, 3D preview and rotation,
   change the game folder and clear the cache.
 
 ### CJ
@@ -71,13 +74,13 @@ dotnet publish src/SaSkinManager.App -c Release -r win-x64 --self-contained -p:P
 
 ## Layout
 
-- `src/SaSkinManager.Core`: file formats (IMG VER2, IDE, TXD/DXT, DFF), character catalog, library and swap logic. No WPF, testable.
-- `src/SaSkinManager.App`: WPF user interface (.NET 8).
+- `src/SaSkinManager.Core`: file formats (IMG VER2, IDE, TXD/DXT, DFF geometry), character catalog, library and swap logic. No WPF, testable.
+- `src/SaSkinManager.App`: WPF user interface (.NET 8), 3D preview with WPF's built-in 3D (no extra dependencies).
 - `tests/SaSkinManager.Core.Tests`: xUnit tests with synthetic IMG/TXD files.
 
 ## Roadmap
 
-- v2: 3D model preview (`.dff` + `.txd`), original vs. new side by side, grid of rotating models; swap profiles.
+- ~~v2: 3D model preview, original vs. new side by side, grid of rotating models~~ (done in v0.4.0); swap profiles.
 - v3: vehicle swaps (cars, bikes, boats, planes, helicopters…) via `data/vehicles.ide`.
 
 ## License

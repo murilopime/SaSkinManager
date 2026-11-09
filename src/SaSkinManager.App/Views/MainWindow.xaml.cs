@@ -13,11 +13,18 @@ public partial class MainWindow : Window
 
     public MainWindow(GameInstall game)
     {
+        App.Trace("MainWindow: InitializeComponent");
         InitializeComponent();
+        App.Trace("MainWindow: new VM");
         DarkTitleBar.Attach(this);
         DataContext = _vm = new MainViewModel(game);
-        Loaded += async (_, _) => await _vm.InitializeAsync();
+        Loaded += async (_, _) => { await _vm.InitializeAsync(); QueueVisibleTiles(); };
+        ContentRendered += (_, _) => _vm.StartBackgroundWork();
+        _vm.SpinGridChanged += QueueVisibleTiles;
+        _tilesTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
+        _tilesTimer.Tick += (_, _) => { _tilesTimer.Stop(); UpdateVisibleTiles(); };
         PreviewKeyDown += OnPreviewKeyDown;
+        App.Trace("MainWindow: ctor done");
     }
 
     /// <summary>Ctrl+F: buscar · Enter (fora da busca): trocar · Ctrl+Z (fora de caixas de texto): desfazer a última troca.</summary>
@@ -43,6 +50,55 @@ public partial class MainWindow : Window
             _vm.ApplyCommand.Execute(null);
             e.Handled = true;
         }
+    }
+
+    private readonly System.Windows.Threading.DispatcherTimer _tilesTimer;
+
+    private void PedGrid_ScrollChanged(object sender, ScrollChangedEventArgs e) => QueueVisibleTiles();
+    private void PedGrid_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e) => QueueVisibleTiles();
+
+    private void QueueVisibleTiles()
+    {
+        _tilesTimer.Stop();
+        _tilesTimer.Start();
+    }
+
+    /// <summary>Descobre quais blocos da grade estão na tela e avisa o ViewModel.</summary>
+    private void UpdateVisibleTiles()
+    {
+        var visible = new List<PedItem>();
+        var sv = FindChild<ScrollViewer>(PedGrid);
+        if (PedGrid.IsVisible && sv is not null && sv.ViewportHeight > 0)
+        {
+            foreach (var item in PedGrid.Items)
+            {
+                if (item is not PedItem p || PedGrid.ItemContainerGenerator.ContainerFromItem(item) is not FrameworkElement c || !c.IsVisible) continue;
+                var r = c.TransformToAncestor(sv).TransformBounds(new Rect(c.RenderSize));
+                if (r.Bottom > 0 && r.Top < sv.ViewportHeight) visible.Add(p);
+            }
+        }
+        _vm.SetVisibleTiles(visible);
+    }
+
+    private static T? FindChild<T>(DependencyObject root) where T : DependencyObject
+    {
+        for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var c = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+            if (c is T t) return t;
+            if (FindChild<T>(c) is { } found) return found;
+        }
+        return null;
+    }
+
+    private void Tile_MouseEnter(object sender, MouseEventArgs e)
+    {
+        if (sender is ListBoxItem { DataContext: PedItem p }) _vm.HoverEnter(p);
+    }
+
+    private void Tile_MouseLeave(object sender, MouseEventArgs e)
+    {
+        if (sender is ListBoxItem { DataContext: PedItem p }) _vm.HoverLeave(p);
     }
 
     private void Settings_Click(object sender, RoutedEventArgs e)

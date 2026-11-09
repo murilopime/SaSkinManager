@@ -65,6 +65,18 @@ public sealed class AppSettings
     /// <summary>Ordem da biblioteca: "recent", "name" ou "usage".</summary>
     public string SkinSort { get; set; } = "recent";
 
+    /// <summary>Modo 18+: mostra as versões "Hot Coffee" das namoradas do CJ (desligado por padrão).</summary>
+    public bool AdultMode { get; set; }
+
+    /// <summary>Miniaturas e prévia com o modelo 3D (false = só a textura, como na v1).</summary>
+    public bool Preview3D { get; set; } = true;
+
+    /// <summary>Todos os modelos visíveis na grade ficam girando (false = só o que está sob o mouse).</summary>
+    public bool SpinGrid { get; set; } = true;
+
+    /// <summary>A prévia 3D gira sozinha.</summary>
+    public bool AutoRotate { get; set; } = true;
+
     /// <summary>Fecha o programa depois de clicar em Jogar.</summary>
     public bool CloseOnPlay { get; set; }
 

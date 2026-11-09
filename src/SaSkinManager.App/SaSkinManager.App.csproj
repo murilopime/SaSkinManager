@@ -8,7 +8,7 @@
     <UseWPF>true</UseWPF>
     <RootNamespace>SaSkinManager.App</RootNamespace>
     <AssemblyName>SaSkinManager</AssemblyName>
-    <Version>0.3.0</Version>
+    <Version>0.4.0</Version>
     <Product>SA Skin Manager</Product>
     <ApplicationIcon>Assets/app.ico</ApplicationIcon>
   </PropertyGroup>

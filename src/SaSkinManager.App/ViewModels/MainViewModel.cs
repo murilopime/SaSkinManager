@@ -21,14 +21,18 @@ public sealed partial class PedItem : ObservableObject
     public PedItem(GameModel model, ImageSource? thumb)
     {
         Model = model;
-        Thumb = thumb;
+        _thumb = thumb;
         Title = PedCatalog.DisplayNameFor(model);
         Description = PedCatalog.DescriptionFor(model);
         CategoryLabel = PedCatalog.CategoryLabel(model.Category);
+        IsAdult = PedCatalog.IsAdult(model);
     }
 
     public GameModel Model { get; }
-    public ImageSource? Thumb { get; }
+    [ObservableProperty] private ImageSource? _thumb;
+
+    /// <summary>Modelo 3D girando no bloco da grade (blocos visíveis na tela, ou o que está sob o mouse).</summary>
+    [ObservableProperty] private System.Windows.Media.Media3D.Model3D? _liveModel;
     public string Title { get; }
     public string Description { get; }
     public string CategoryLabel { get; }
@@ -47,6 +51,7 @@ public sealed partial class PedItem : ObservableObject
 
     [ObservableProperty] private bool _isFavorite;
     public bool IsCutscene => Model.Category == PedCatalog.CutsceneCategory;
+    public bool IsAdult { get; } = false;
 }
 
 /// <summary>Filtros rápidos da lista de personagens.</summary>
@@ -93,11 +98,11 @@ public sealed partial class SkinItem : ObservableObject
     public SkinItem(LibrarySkin skin, ImageSource? thumb)
     {
         Skin = skin;
-        Thumb = thumb;
+        _thumb = thumb;
     }
 
     public LibrarySkin Skin { get; }
-    public ImageSource? Thumb { get; }
+    [ObservableProperty] private ImageSource? _thumb;
     public string Title => Skin.Name;
 
     /// <summary>Renomeando na própria lista (caixa de texto no lugar do nome).</summary>
@@ -306,6 +311,7 @@ public sealed partial class MainViewModel : ObservableObject
                 if (byKey.TryGetValue(m.Key, out var p)) Linked.Add(new LinkedItem(p));
         }
         OnPropertyChanged(nameof(HasLinked));
+        LoadOriginalPreview();
     }
     public List<ModeOption> Modes { get; } = ModeOption.All();
 
@@ -335,6 +341,7 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ListView));
         OnPropertyChanged(nameof(ThumbSize));
         OnPropertyChanged(nameof(TileWidth));
+        PreviewSettingsChanged();
         RefreshPedsView();
     }
 
@@ -376,6 +383,7 @@ public sealed partial class MainViewModel : ObservableObject
     private bool FilterPed(object o)
     {
         var p = (PedItem)o;
+        if (p.IsAdult && !App.Settings.AdultMode) return false;
         if (SelectedCategory.Key.Length > 0 && p.Model.Category != SelectedCategory.Key) return false;
         // as versões de cutscene já são trocadas junto: ficam escondidas, a não ser que a categoria seja Cutscenes
         if (p.IsCutscene && !App.Settings.ShowCutscenes && SelectedCategory.Key != PedCatalog.CutsceneCategory) return false;
@@ -436,8 +444,9 @@ public sealed partial class MainViewModel : ObservableObject
         Peds.Clear();
         var favs = new HashSet<string>(App.Settings.Favorites);
         foreach (var m in models)
-            Peds.Add(new PedItem(m, Thumbs.Load(_scanner.ThumbPath(m))) { IsFavorite = favs.Contains(m.Key) });
+            Peds.Add(new PedItem(m, null) { IsFavorite = favs.Contains(m.Key) });
         PedCount = models.Count;
+        ApplyPedThumbs();
 
         var cats = models.Select(m => m.Category).Distinct()
             .Select(c => new CategoryOption(c, PedCatalog.CategoryLabel(c)))
@@ -460,7 +469,9 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var s in _library.Skins)
         {
             try { Thumbs.EnsureSkinThumb(_library, s); } catch (Exception) { }
-            Skins.Add(new SkinItem(s, Thumbs.Load(_library.ThumbPath(s))));
+            var item = new SkinItem(s, null);
+            item.Thumb = SkinThumb(s, img => item.Thumb = img).Value;
+            Skins.Add(item);
         }
         SelectedSkin = Skins.FirstOrDefault(s => s.Skin.Id == selected) ?? SelectedSkin;
         if (Peds.Count > 0 || _swaps.Manifest.Records.Count > 0) RefreshSwaps();

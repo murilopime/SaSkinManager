@@ -9,6 +9,20 @@ namespace SaSkinManager.App.Views;
 
 public partial class SettingsWindow : Window
 {
+    private bool _loadingAdult;
+
+    /// <summary>Ao ligar o modo 18+, avisa o que vai aparecer e pede confirmação.</summary>
+    private void AdultBox_Checked(object sender, RoutedEventArgs e)
+    {
+        if (_loadingAdult) return;
+        var r = MessageBox.Show(this,
+            SaSkinManager.Core.L.T(
+                "Ao ativar o modo 18+, a lista vai mostrar os modelos das namoradas do CJ na versão \"Hot Coffee\" (versões 1 e 2: roupa íntima e sem roupa).\n\nEsse conteúdo é só para maiores de 18 anos. Deseja ativar?",
+                "Turning on 18+ mode will show the \"Hot Coffee\" versions of CJ's girlfriends in the list (versions 1 and 2: underwear and nude).\n\nThis content is for adults (18+) only. Turn it on?"),
+            SaSkinManager.Core.L.T("Modo 18+", "18+ mode"), MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
+        if (r != MessageBoxResult.Yes) AdultBox.IsChecked = false;
+    }
+
     private sealed record Option<T>(T Value, string Label)
     {
         public override string ToString() => Label;
@@ -57,6 +71,12 @@ public partial class SettingsWindow : Window
         ThumbSlider.Value = Math.Clamp(s.ThumbSize, 72, 200);
         CloseOnPlayBox.IsChecked = s.CloseOnPlay;
         ShowCutscenesBox.IsChecked = s.ShowCutscenes;
+        _loadingAdult = true;
+        AdultBox.IsChecked = s.AdultMode;
+        _loadingAdult = false;
+        Preview3DBox.IsChecked = s.Preview3D;
+        AutoRotateBox.IsChecked = s.AutoRotate;
+        SpinGridBox.IsChecked = s.SpinGrid;
         GamePathText.Text = gamePath;
 
         var version = Assembly.GetExecutingAssembly().GetName().Version;
@@ -73,6 +93,10 @@ public partial class SettingsWindow : Window
         s.ThumbSize = (int)ThumbSlider.Value;
         s.CloseOnPlay = CloseOnPlayBox.IsChecked == true;
         s.ShowCutscenes = ShowCutscenesBox.IsChecked == true;
+        s.AdultMode = AdultBox.IsChecked == true;
+        s.Preview3D = Preview3DBox.IsChecked == true;
+        s.AutoRotate = AutoRotateBox.IsChecked == true;
+        s.SpinGrid = SpinGridBox.IsChecked == true;
         s.Accent = ((AccentOption)AccentBox.SelectedItem).Key;
         s.Save(App.Paths);
 

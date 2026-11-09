@@ -45,6 +45,7 @@ public sealed class SkinLibrary
     public string SkinDir(LibrarySkin s) => Path.Combine(_dir, s.Id);
     public string FilePath(LibrarySkin s, string file) => Path.Combine(SkinDir(s), file);
     public string ThumbPath(LibrarySkin s) => Path.Combine(SkinDir(s), "thumb.png");
+    public string Thumb3DPath(LibrarySkin s) => Path.Combine(SkinDir(s), "thumb3d-v2.png");
 
     public void Reload()
     {

@@ -86,3 +86,10 @@ dotnet publish src/SaSkinManager.App -c Release -r win-x64 --self-contained -p:P
 ## License
 
 [GPL-3.0](LICENSE). No game files (Rockstar Games) are distributed with this project.
+
+## Disclaimer
+
+SA Skin Manager is an unofficial, fan-made modding tool. It is not affiliated with, endorsed by, or sponsored by
+Rockstar Games or Take-Two Interactive. *Grand Theft Auto* and *Grand Theft Auto: San Andreas* are trademarks of
+Take-Two Interactive Software, Inc. You need your own legal copy of the game; the program only reads and changes
+files of the copy installed on your computer.

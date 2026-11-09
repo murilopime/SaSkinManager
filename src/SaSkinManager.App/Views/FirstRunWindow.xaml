@@ -4,7 +4,7 @@
         xmlns:s="clr-namespace:SaSkinManager.App.Services"
         Title="{s:Tr Pt='SA Skin Manager — configuração', En='SA Skin Manager — setup'}" Width="640" SizeToContent="Height"
         WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
-        Background="{StaticResource Bg}">
+        Background="{StaticResource Bg}" Icon="pack://application:,,,/Assets/app.ico">
     <StackPanel Margin="28">
         <DockPanel>
             <ComboBox x:Name="LanguageBox" DockPanel.Dock="Right" Width="170" VerticalAlignment="Top" DisplayMemberPath="Label"

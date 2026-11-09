@@ -101,9 +101,14 @@ internal static class Fake
     /// DFF estruturado: Clump{Struct, FrameList{Struct, Extension{HAnim?}}, GeometryList grande}.
     /// A GeometryList de 100 KB garante que o HAnim só é achado pelo começo do arquivo.
     /// </summary>
-    public static byte[] PedDff(bool skinned)
+    public static byte[] PedDff(bool skinned, int bones = 32)
     {
-        var ext = skinned ? Chunk(DffInfo.HAnimPlugin, new byte[20]) : Array.Empty<byte>();
+        // HAnim do nó raiz: versão, id do nó, número de ossos, flags, tamanho do keyframe, ossos (id, índice, tipo)
+        var hanim = new MemoryStream();
+        var hw = new BinaryWriter(hanim);
+        hw.Write(0x100); hw.Write(0); hw.Write(bones); hw.Write(0); hw.Write(36);
+        for (int i = 0; i < bones; i++) { hw.Write(i); hw.Write(i); hw.Write(0); }
+        var ext = skinned ? Chunk(DffInfo.HAnimPlugin, hanim.ToArray()) : Array.Empty<byte>();
         var frameList = Chunk(0x0E, Chunk(RwChunk.Struct, new byte[60]).Concat(Chunk(RwChunk.Extension, ext)).ToArray());
         var geo = new byte[100_000];
         new Random(7).NextBytes(geo);
@@ -135,6 +140,8 @@ internal static class Fake
         ImgArchive.Create(System.IO.Path.Combine(root, "models", "cutscene.img"), new[]
         {
             ("cssweet.dff", PedDff(skinned: true)), ("cssweet.txd", Txd8888("cssweet", 8, 8, 0, 120, 0)),
+            // objeto animado de cutscene (carta de baralho): tem HAnim, mas poucos ossos
+            ("cscard.dff", PedDff(skinned: true, bones: 3)), ("cscard.txd", Txd8888("cscard", 8, 8, 255, 255, 255)),
         });
         ImgArchive.Create(System.IO.Path.Combine(root, "models", "player.img"), new[]
         {

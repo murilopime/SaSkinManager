@@ -44,7 +44,13 @@ public sealed partial class PedItem : ObservableObject
     [ObservableProperty] private string? _swapText;
     public bool IsSwapped => SwapText is not null;
     partial void OnSwapTextChanged(string? value) => OnPropertyChanged(nameof(IsSwapped));
+
+    [ObservableProperty] private bool _isFavorite;
+    public bool IsCutscene => Model.Category == PedCatalog.CutsceneCategory;
 }
+
+/// <summary>Filtros rápidos da lista de personagens.</summary>
+public enum PedFilter { All, Swapped, NotSwapped, Favorites }
 
 /// <summary>Modelo ligado ao personagem selecionado (cutscene ou variação de missão), trocado junto.</summary>
 public sealed partial class LinkedItem : ObservableObject
@@ -99,6 +105,15 @@ public sealed partial class SkinItem : ObservableObject
     [ObservableProperty] private string _editName = "";
 
     public void NameChanged() => OnPropertyChanged(nameof(Title));
+
+    /// <summary>Em quantos personagens a skin está aplicada agora.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UsageText), nameof(IsUsed))]
+    private int _usageCount;
+    public bool IsUsed => UsageCount > 0;
+    public string UsageText => UsageCount == 1
+        ? L.T("em uso: 1 personagem", "in use: 1 character")
+        : L.T($"em uso: {UsageCount} personagens", $"in use: {UsageCount} characters");
     public string Subtitle => Skin.Kind == SkinKind.CjPack
         ? L.T($"Pacote do CJ · {Skin.Files.Count} arquivos", $"CJ pack · {Skin.Files.Count} files")
         : $"{Skin.DffFile} + {Skin.TxdFile}";
@@ -115,6 +130,11 @@ public sealed record ModeOption(SwapMode Mode, string Label)
         new(SwapMode.Modloader, L.T("Mod Loader (não mexe nos .img)", "Mod Loader (leaves .img files untouched)")),
         new(SwapMode.Img, L.T("Editar .img direto (com backup)", "Edit .img directly (with backup)")),
     };
+}
+
+public sealed record SortOption(string Key, string Label)
+{
+    public override string ToString() => Label;
 }
 
 /// <summary>Categoria do filtro. Key vazia = todas.</summary>
@@ -139,6 +159,10 @@ public sealed partial class MainViewModel : ObservableObject
 
         PedsView = CollectionViewSource.GetDefaultView(Peds);
         PedsView.Filter = FilterPed;
+        SkinsView = CollectionViewSource.GetDefaultView(Skins);
+        SkinsView.Filter = FilterSkin;
+        _selectedSkinSort = SkinSorts.FirstOrDefault(o => o.Key == App.Settings.SkinSort) ?? SkinSorts[0];
+        ApplySkinSort();
         Categories.Add(AllCategories);
         _selectedCategory = AllCategories;
         _selectedMode = Modes.FirstOrDefault(m => m.Mode == App.Settings.PreferredMode) ?? Modes[0];
@@ -160,6 +184,113 @@ public sealed partial class MainViewModel : ObservableObject
     public ICollectionView PedsView { get; }
     public ObservableCollection<CategoryOption> Categories { get; } = new();
     public ObservableCollection<SkinItem> Skins { get; } = new();
+    public ICollectionView SkinsView { get; }
+
+    // ---- biblioteca: busca e ordem ----
+    [ObservableProperty] private string _skinSearch = "";
+    partial void OnSkinSearchChanged(string value) => SkinsView.Refresh();
+
+    public List<SortOption> SkinSorts { get; } = new()
+    {
+        new("recent", L.T("Mais recentes", "Newest")),
+        new("name", L.T("Nome (A–Z)", "Name (A–Z)")),
+        new("usage", L.T("Mais usadas", "Most used")),
+    };
+
+    [ObservableProperty] private SortOption _selectedSkinSort;
+    partial void OnSelectedSkinSortChanged(SortOption value)
+    {
+        App.Settings.SkinSort = value.Key;
+        App.Settings.Save(App.Paths);
+        ApplySkinSort();
+    }
+
+    private void ApplySkinSort()
+    {
+        using (SkinsView.DeferRefresh())
+        {
+            SkinsView.SortDescriptions.Clear();
+            switch (SelectedSkinSort.Key)
+            {
+                case "name":
+                    SkinsView.SortDescriptions.Add(new SortDescription(nameof(SkinItem.Title), ListSortDirection.Ascending));
+                    break;
+                case "usage":
+                    SkinsView.SortDescriptions.Add(new SortDescription(nameof(SkinItem.UsageCount), ListSortDirection.Descending));
+                    SkinsView.SortDescriptions.Add(new SortDescription(nameof(SkinItem.Title), ListSortDirection.Ascending));
+                    break;
+                // "recent": ordem da biblioteca (mais nova primeiro)
+            }
+        }
+    }
+
+    private bool FilterSkin(object o)
+    {
+        if (string.IsNullOrWhiteSpace(SkinSearch)) return true;
+        var s = (SkinItem)o;
+        var q = SkinSearch.Trim();
+        return s.Title.Contains(q, StringComparison.OrdinalIgnoreCase)
+            || s.Skin.Files.Any(f => f.Contains(q, StringComparison.OrdinalIgnoreCase));
+    }
+
+    // ---- personagens: filtros rápidos e favoritos ----
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FilterIsAll), nameof(FilterIsSwapped), nameof(FilterIsNotSwapped), nameof(FilterIsFavorites))]
+    private PedFilter _filter = PedFilter.All;
+    partial void OnFilterChanged(PedFilter value) => RefreshPedsView();
+
+    public bool FilterIsAll => Filter == PedFilter.All;
+    public bool FilterIsSwapped => Filter == PedFilter.Swapped;
+    public bool FilterIsNotSwapped => Filter == PedFilter.NotSwapped;
+    public bool FilterIsFavorites => Filter == PedFilter.Favorites;
+
+    [RelayCommand] private void SetFilter(string name) => Filter = Enum.Parse<PedFilter>(name);
+
+    /// <summary>Quantos personagens aparecem com os filtros atuais.</summary>
+    [ObservableProperty] private int _visibleCount;
+
+    private void RefreshPedsView()
+    {
+        PedsView.Refresh();
+        var visible = PedsView.Cast<PedItem>().ToList();
+        VisibleCount = visible.Count;
+        // o selecionado sumiu com o filtro: seleciona o primeiro que aparece
+        if (SelectedPed is null || !visible.Contains(SelectedPed)) SelectedPed = visible.FirstOrDefault();
+    }
+
+    [RelayCommand]
+    private void ToggleFavorite(PedItem? ped)
+    {
+        ped ??= SelectedPed;
+        if (ped is null) return;
+        ped.IsFavorite = !ped.IsFavorite;
+        var favs = App.Settings.Favorites;
+        favs.RemoveAll(k => k == ped.Model.Key);
+        if (ped.IsFavorite) favs.Add(ped.Model.Key);
+        App.Settings.Save(App.Paths);
+        if (Filter == PedFilter.Favorites) RefreshPedsView();
+    }
+
+    // ---- seleção de vários personagens (Ctrl/Shift) ----
+    private List<PedItem> _selectedPeds = new();
+
+    public int MultiCount => _selectedPeds.Count;
+    public bool IsMulti => _selectedPeds.Count > 1;
+    public string MultiText => L.T(
+        $"{_selectedPeds.Count} personagens selecionados: a troca vale para todos (com as cutscenes de cada um).",
+        $"{_selectedPeds.Count} characters selected: the swap applies to all of them (with each one's cutscenes).");
+
+    /// <summary>Chamado pela janela quando a seleção da lista muda.</summary>
+    public void SetSelection(IEnumerable<PedItem> peds)
+    {
+        _selectedPeds = peds.ToList();
+        OnPropertyChanged(nameof(MultiCount));
+        OnPropertyChanged(nameof(IsMulti));
+        OnPropertyChanged(nameof(MultiText));
+    }
+
+    // ---- desfazer a última troca (Ctrl+Z) ----
+    private readonly Stack<List<(GameModel Target, SwapRecord Record)>> _undo = new();
     public ObservableCollection<SwapGroup> SwapGroups { get; } = new();
     private readonly HashSet<string> _expandedGroups = new();
     public ObservableCollection<LinkedItem> Linked { get; } = new();
@@ -204,6 +335,7 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ListView));
         OnPropertyChanged(nameof(ThumbSize));
         OnPropertyChanged(nameof(TileWidth));
+        RefreshPedsView();
     }
 
     [RelayCommand] private void ShowGrid() => GridView = true;
@@ -217,10 +349,10 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     [ObservableProperty] private string _searchText = "";
-    partial void OnSearchTextChanged(string value) => PedsView.Refresh();
+    partial void OnSearchTextChanged(string value) => RefreshPedsView();
 
     [ObservableProperty] private CategoryOption _selectedCategory;
-    partial void OnSelectedCategoryChanged(CategoryOption value) => PedsView.Refresh();
+    partial void OnSelectedCategoryChanged(CategoryOption value) => RefreshPedsView();
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ApplyCommand), nameof(RevertSelectedCommand))]
@@ -245,6 +377,14 @@ public sealed partial class MainViewModel : ObservableObject
     {
         var p = (PedItem)o;
         if (SelectedCategory.Key.Length > 0 && p.Model.Category != SelectedCategory.Key) return false;
+        // as versões de cutscene já são trocadas junto: ficam escondidas, a não ser que a categoria seja Cutscenes
+        if (p.IsCutscene && !App.Settings.ShowCutscenes && SelectedCategory.Key != PedCatalog.CutsceneCategory) return false;
+        switch (Filter)
+        {
+            case PedFilter.Swapped when !p.IsSwapped: return false;
+            case PedFilter.NotSwapped when p.IsSwapped: return false;
+            case PedFilter.Favorites when !p.IsFavorite: return false;
+        }
         if (string.IsNullOrWhiteSpace(SearchText)) return true;
         var q = SearchText.Trim();
         return p.Title.Contains(q, StringComparison.OrdinalIgnoreCase)
@@ -294,7 +434,9 @@ public sealed partial class MainViewModel : ObservableObject
     {
         var selectedKey = SelectedPed?.Model.Key;
         Peds.Clear();
-        foreach (var m in models) Peds.Add(new PedItem(m, Thumbs.Load(_scanner.ThumbPath(m))));
+        var favs = new HashSet<string>(App.Settings.Favorites);
+        foreach (var m in models)
+            Peds.Add(new PedItem(m, Thumbs.Load(_scanner.ThumbPath(m))) { IsFavorite = favs.Contains(m.Key) });
         PedCount = models.Count;
 
         var cats = models.Select(m => m.Category).Distinct()
@@ -307,6 +449,7 @@ public sealed partial class MainViewModel : ObservableObject
         SelectedCategory = AllCategories;
 
         RefreshSwaps();
+        RefreshPedsView();
         SelectedPed = Peds.FirstOrDefault(p => p.Model.Key == selectedKey) ?? Peds.FirstOrDefault();
     }
 
@@ -320,6 +463,7 @@ public sealed partial class MainViewModel : ObservableObject
             Skins.Add(new SkinItem(s, Thumbs.Load(_library.ThumbPath(s))));
         }
         SelectedSkin = Skins.FirstOrDefault(s => s.Skin.Id == selected) ?? SelectedSkin;
+        if (Peds.Count > 0 || _swaps.Manifest.Records.Count > 0) RefreshSwaps();
     }
 
     private void RefreshSwaps()
@@ -330,8 +474,16 @@ public sealed partial class MainViewModel : ObservableObject
             var r = _swaps.FindFor(p.Model);
             p.SwapText = r is null ? null : $"→ {SkinNameOf(r)}";
         }
+        // uso de cada skin = quantos personagens (grupos) estão com ela
+        var usage = _swaps.Manifest.Records.GroupBy(r => r.SkinId)
+            .ToDictionary(g => g.Key, g => g.Select(r => r.GroupKey ?? r.TargetKey).Distinct().Count());
+        foreach (var s in Skins) s.UsageCount = usage.GetValueOrDefault(s.Skin.Id);
+        if (SelectedSkinSort.Key == "usage") SkinsView.Refresh();
+        if (Filter is PedFilter.Swapped or PedFilter.NotSwapped) RefreshPedsView();
+
         OnPropertyChanged(nameof(SelectedSwap));
         OnPropertyChanged(nameof(SelectedSwapText));
+        UndoLastCommand.NotifyCanExecuteChanged();
         RevertSelectedCommand.NotifyCanExecuteChanged();
         RevertAllCommand.NotifyCanExecuteChanged();
     }
@@ -399,6 +551,11 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanApply))]
     private void Apply()
     {
+        if (IsMulti)
+        {
+            ApplyMany();
+            return;
+        }
         var target = SelectedPed!.Model;
         var title = SelectedPed.Title;
         var skin = SelectedSkin!.Skin;
@@ -424,17 +581,73 @@ public sealed partial class MainViewModel : ObservableObject
                 done.Add((t, _swaps.Apply(t, skin, SelectedMode.Mode, t == target ? null : target)));
         });
         if (done.Count == 0) return;
+        _undo.Push(done);
+        UndoLastCommand.NotifyCanExecuteChanged();
 
         var mode = ModeName(done[0].Record.Mode);
         var extra = done.Count > 1 ? L.T($" (+{done.Count - 1} cutscene/variação)", $" (+{done.Count - 1} cutscene/variant)") : "";
         Status = L.T($"{title} agora usa \"{skin.Name}\" ({mode}){extra}.", $"{title} now uses \"{skin.Name}\" ({mode}){extra}.");
         Toasts.Show(L.T($"{title} trocado por \"{skin.Name}\"{extra}", $"{title} replaced with \"{skin.Name}\"{extra}"),
-            ToastKind.Success, L.T("Desfazer", "Undo"), () =>
+            ToastKind.Success, L.T("Desfazer", "Undo"), () => RevertBatch(done));
+    }
+
+    /// <summary>Mesma skin em vários personagens; cada um leva junto as suas cutscenes/variações.</summary>
+    private void ApplyMany()
+    {
+        var skin = SelectedSkin!.Skin;
+        var peds = _selectedPeds.Where(p => !p.IsCj).ToList();
+        bool skippedCj = peds.Count < _selectedPeds.Count;
+        var all = Peds.Select(p => p.Model).ToList();
+        var excluded = new HashSet<string>(Linked.Where(l => !l.Include).Select(l => l.Ped.Model.Key));
+        var targets = new List<(GameModel Target, GameModel? Group)>();
+        var seen = new HashSet<string>();
+        foreach (var p in peds)
+        {
+            if (seen.Add(p.Model.Key)) targets.Add((p.Model, null));
+            foreach (var m in PedCatalog.LinkedModels(p.Model, all))
             {
-                // só desfaz o que ainda for desta troca (o usuário pode ter trocado de novo depois)
-                foreach (var (t, rec) in done)
-                    if (_swaps.FindFor(t) is { } cur && cur.AppliedAt == rec.AppliedAt) Revert(cur);
-            });
+                // o que o usuário desmarcou em "Trocar também" (do personagem principal) fica de fora
+                if (p == SelectedPed && excluded.Contains(m.Key)) continue;
+                if (seen.Add(m.Key)) targets.Add((m, p.Model));
+            }
+        }
+        var done = new List<(GameModel Target, SwapRecord Record)>();
+        Run(() =>
+        {
+            foreach (var (t, g) in targets) done.Add((t, _swaps.Apply(t, skin, SelectedMode.Mode, g)));
+        });
+        if (done.Count == 0) return;
+        _undo.Push(done);
+        UndoLastCommand.NotifyCanExecuteChanged();
+
+        Status = L.T($"{peds.Count} personagens agora usam \"{skin.Name}\" ({done.Count} modelos).",
+                     $"{peds.Count} characters now use \"{skin.Name}\" ({done.Count} models).");
+        Toasts.Show(L.T($"{peds.Count} personagens trocados por \"{skin.Name}\"", $"{peds.Count} characters replaced with \"{skin.Name}\""),
+            ToastKind.Success, L.T("Desfazer", "Undo"), () => RevertBatch(done));
+        if (skippedCj)
+            Toasts.Show(L.T("O CJ ficou de fora: ele precisa de um \"Pacote do CJ\".", "CJ was skipped: he needs a \"CJ pack\"."), ToastKind.Info);
+    }
+
+    /// <summary>Desfaz um lote de trocas, só o que ainda for daquela troca (o usuário pode ter trocado de novo depois).</summary>
+    private int RevertBatch(List<(GameModel Target, SwapRecord Record)> batch)
+    {
+        var still = batch
+            .Select(b => _swaps.FindFor(b.Target) is { } cur && cur.AppliedAt == b.Record.AppliedAt ? cur : null)
+            .OfType<SwapRecord>().ToList();
+        if (still.Count == 0) return 0;
+        RevertMany(still);
+        return still.Count;
+    }
+
+    private bool CanUndoLast() => _undo.Count > 0;
+
+    /// <summary>Ctrl+Z: desfaz a última troca feita nesta sessão (e a anterior, se apertar de novo).</summary>
+    [RelayCommand(CanExecute = nameof(CanUndoLast))]
+    private void UndoLast()
+    {
+        while (_undo.Count > 0)
+            if (RevertBatch(_undo.Pop()) > 0) break;
+        UndoLastCommand.NotifyCanExecuteChanged();
     }
 
     private bool CanRevertSelected() => SelectedSwap is not null;
@@ -524,11 +737,66 @@ public sealed partial class MainViewModel : ObservableObject
         if (dlg.ShowDialog() == true) ImportPaths(new[] { dlg.FolderName }, true);
     }
 
+    [RelayCommand]
+    private void ExportLibrary()
+    {
+        if (_library.Skins.Count == 0)
+        {
+            Toasts.Show(L.T("A biblioteca está vazia.", "The library is empty."), ToastKind.Info);
+            return;
+        }
+        var dlg = new SaveFileDialog
+        {
+            Title = L.T("Salvar backup da biblioteca", "Save library backup"),
+            Filter = L.T("Backup da biblioteca (*.zip)|*.zip", "Library backup (*.zip)|*.zip"),
+            FileName = $"SaSkinManager-biblioteca-{DateTime.Now:yyyy-MM-dd}.zip",
+        };
+        if (dlg.ShowDialog() != true) return;
+        try
+        {
+            _library.ExportBackup(dlg.FileName);
+            Toasts.Show(L.T($"Backup salvo: {_library.Skins.Count} skins.", $"Backup saved: {_library.Skins.Count} skins."),
+                ToastKind.Success, L.T("Abrir pasta", "Open folder"),
+                () => Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{dlg.FileName}\"") { UseShellExecute = true }));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            Toasts.Show(L.T("Erro ao salvar o backup: ", "Could not save the backup: ") + e.Message, ToastKind.Error);
+        }
+    }
+
+    [RelayCommand]
+    private void RestoreLibrary()
+    {
+        var dlg = new OpenFileDialog
+        {
+            Title = L.T("Restaurar backup da biblioteca", "Restore library backup"),
+            Filter = L.T("Backup da biblioteca (*.zip)|*.zip", "Library backup (*.zip)|*.zip"),
+        };
+        if (dlg.ShowDialog() == true) ImportPaths(new[] { dlg.FileName }, false);
+    }
+
+    private void RestoreBackup(string zip)
+    {
+        var (added, skipped) = _library.ImportBackup(zip);
+        ReloadSkins();
+        var msg = L.T($"Backup restaurado: {added} skin(s) adicionada(s)", $"Backup restored: {added} skin(s) added");
+        if (skipped > 0) msg += L.T($", {skipped} já estava(m) na biblioteca", $", {skipped} already in the library");
+        Toasts.Show(msg + ".", added > 0 ? ToastKind.Success : ToastKind.Info);
+    }
+
     public void ImportPaths(IEnumerable<string> paths, bool asCjPack)
     {
         try
         {
-            var r = _library.Import(paths, asCjPack);
+            var list = paths.ToList();
+            // um .zip de backup da biblioteca (arrastado ou escolhido) é restaurado em vez de importado
+            if (!asCjPack && list.Count == 1 && list[0].EndsWith(".zip", StringComparison.OrdinalIgnoreCase) && SkinLibrary.IsBackup(list[0]))
+            {
+                RestoreBackup(list[0]);
+                return;
+            }
+            var r = _library.Import(list, asCjPack);
             ReloadSkins();
             if (r.Imported.Count > 0)
             {

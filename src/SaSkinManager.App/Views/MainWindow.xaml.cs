@@ -20,9 +20,16 @@ public partial class MainWindow : Window
         PreviewKeyDown += OnPreviewKeyDown;
     }
 
-    /// <summary>Ctrl+F: buscar · Enter (fora da busca): trocar.</summary>
+    /// <summary>Ctrl+F: buscar · Enter (fora da busca): trocar · Ctrl+Z (fora de caixas de texto): desfazer a última troca.</summary>
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (e.Key == Key.Z && Keyboard.Modifiers == ModifierKeys.Control && e.OriginalSource is not TextBox)
+        {
+            if (_vm.UndoLastCommand.CanExecute(null)) _vm.UndoLastCommand.Execute(null);
+            else _vm.Toasts.Show(SaSkinManager.Core.L.T("Nada para desfazer.", "Nothing to undo."), ToastKind.Info);
+            e.Handled = true;
+            return;
+        }
         if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control)
         {
             SearchBox.Focus();
@@ -56,6 +63,23 @@ public partial class MainWindow : Window
         }
         _vm.SettingsChanged();
         if (w.RescanRequested) _vm.RescanCommand.Execute(null);
+    }
+
+    /// <summary>Seleção com Ctrl/Shift: passa todos os personagens selecionados para o ViewModel.</summary>
+    private void Peds_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (sender is ListBox lb) _vm.SetSelection(lb.SelectedItems.OfType<PedItem>());
+    }
+
+    private void LibraryMenu_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { ContextMenu: { } menu } b)
+        {
+            menu.PlacementTarget = b;
+            menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+            menu.DataContext = DataContext;
+            menu.IsOpen = true;
+        }
     }
 
     // ---- renomear skin na própria lista ----

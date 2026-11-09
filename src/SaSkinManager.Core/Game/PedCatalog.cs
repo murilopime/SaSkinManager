@@ -91,7 +91,7 @@ public static class PedCatalog
             var name = Path.GetFileNameWithoutExtension(e.Name);
             if (i % 50 == 0) progress?.Report(new ScanProgress(i, dffs.Count, L.T("procurando especiais: ", "looking for specials: ") + name));
             bool skinned;
-            try { skinned = DffInfo.IsSkinned(img.ReadPrefix(e, DffInfo.PrefixBytes)); }
+            try { skinned = DffInfo.IsCharacter(img.ReadPrefix(e, DffInfo.PrefixBytes)); } // esqueleto completo: personagem, não objeto
             catch (IOException) { continue; }
             if (!skinned) continue;
             found.Add(Special(name, imgName));

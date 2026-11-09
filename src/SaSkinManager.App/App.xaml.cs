@@ -20,6 +20,7 @@ public partial class App : Application
         {
             Settings = AppSettings.Load(Paths);
             L.Set(Settings.Language);
+            Services.AccentColors.Apply(Settings.Accent);
             if (GameInstall.Validate(Settings.GamePath) is not null)
             {
                 if (!RunSetup()) { Shutdown(); return; }

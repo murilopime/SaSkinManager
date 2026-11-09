@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:s="clr-namespace:SaSkinManager.App.Services"
         Title="SA Skin Manager" Width="1360" Height="840" MinWidth="1100" MinHeight="640"
-        WindowStartupLocation="CenterScreen" Background="{StaticResource Bg}">
+        WindowStartupLocation="CenterScreen" Background="{StaticResource Bg}" Icon="pack://application:,,,/Assets/app.ico">
     <Window.Resources>
         <!-- Bloco da grade de personagens. Na v2 a imagem vira o modelo 3D girando. -->
         <Style x:Key="TileItem" TargetType="ListBoxItem">
@@ -21,13 +21,20 @@
                                 <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource Line}"/>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="b" Property="Background" Value="{StaticResource AccentDim}"/>
-                                <Setter TargetName="b" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                                <Setter TargetName="b" Property="Background" Value="{DynamicResource AccentDim}"/>
+                                <Setter TargetName="b" Property="BorderBrush" Value="{DynamicResource Accent}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+        </Style>
+
+        <Style x:Key="Chip" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Padding" Value="10,3"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Background" Value="Transparent"/>
         </Style>
 
         <Style x:Key="ToggleSeg" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
@@ -57,7 +64,7 @@
                     <TextBlock FontSize="18" FontWeight="SemiBold">
                         <Run Text="SA Skin Manager"/>
                         <Run Text="  ·  " Foreground="{StaticResource FgDim}"/>
-                        <Run Text="{Binding ModeBadge, Mode=OneWay}" FontSize="12" Foreground="{StaticResource Accent}"/>
+                        <Run Text="{Binding ModeBadge, Mode=OneWay}" FontSize="12" Foreground="{DynamicResource Accent}"/>
                     </TextBlock>
                     <TextBlock Text="{Binding GamePath}" Style="{StaticResource Dim}"/>
                 </StackPanel>
@@ -80,7 +87,7 @@
                                 <Style TargetType="Button" BasedOn="{StaticResource ToggleSeg}">
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding GridView}" Value="True">
-                                            <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+                                            <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -92,7 +99,7 @@
                                     <Setter Property="Margin" Value="0"/>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding ListView}" Value="True">
-                                            <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+                                            <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -101,7 +108,7 @@
                     </StackPanel>
                     <TextBlock Style="{StaticResource H2}">
                         <Run Text="{s:Tr Pt='Personagens', En='Characters'}"/>
-                        <Run Text="{Binding PedCount, Mode=OneWay, StringFormat=({0})}" Foreground="{StaticResource FgDim}"/>
+                        <Run Text="{Binding VisibleCount, Mode=OneWay, StringFormat=({0})}" Foreground="{StaticResource FgDim}"/>
                     </TextBlock>
                 </DockPanel>
                 <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
@@ -129,12 +136,69 @@
                     </Grid>
                     <ComboBox Grid.Column="2" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" DisplayMemberPath="Label"/>
                 </Grid>
+                <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                        <Button Content="{s:Tr Pt='Todos', En='All'}" Command="{Binding SetFilterCommand}" CommandParameter="All">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource Chip}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding FilterIsAll}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button Content="{s:Tr Pt='Trocados', En='Swapped'}" Command="{Binding SetFilterCommand}" CommandParameter="Swapped">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource Chip}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding FilterIsSwapped}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button Content="{s:Tr Pt='Não trocados', En='Not swapped'}" Command="{Binding SetFilterCommand}" CommandParameter="NotSwapped">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource Chip}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding FilterIsNotSwapped}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button Content="{s:Tr Pt='★ Favoritos', En='★ Favorites'}" Command="{Binding SetFilterCommand}" CommandParameter="Favorites">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource Chip}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding FilterIsFavorites}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                </WrapPanel>
 
                 <Grid>
                     <!-- Grade -->
                     <ListBox ItemsSource="{Binding PedsView}" SelectedItem="{Binding SelectedPed}" ItemContainerStyle="{StaticResource TileItem}"
                              Visibility="{Binding GridView, Converter={StaticResource BoolToVis}}" Padding="4"
-                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             SelectionMode="Extended" SelectionChanged="Peds_SelectionChanged">
+                        <ListBox.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="{s:Tr Pt='★ Favoritar / tirar dos favoritos', En='★ Favorite / unfavorite'}"
+                                          Command="{Binding ToggleFavoriteCommand}"/>
+                            </ContextMenu>
+                        </ListBox.ContextMenu>
                         <ListBox.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <WrapPanel/>
@@ -158,8 +222,14 @@
                                                 <Image Source="{Binding Thumb}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality"/>
                                             </Grid>
                                         </Border>
+                                        <TextBlock Text="★" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5,2,0,0" FontSize="16"
+                                                   Foreground="#FFD54A" Visibility="{Binding IsFavorite, Converter={StaticResource BoolToVis}}">
+                                            <TextBlock.Effect>
+                                                <DropShadowEffect BlurRadius="4" ShadowDepth="0" Opacity="0.9"/>
+                                            </TextBlock.Effect>
+                                        </TextBlock>
                                         <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="4" CornerRadius="9" MinWidth="18" Height="18"
-                                                Background="{StaticResource Accent}" Visibility="{Binding IsSwapped, Converter={StaticResource BoolToVis}}">
+                                                Background="{DynamicResource Accent}" Visibility="{Binding IsSwapped, Converter={StaticResource BoolToVis}}">
                                             <TextBlock Text="✓" Foreground="#1A1205" FontWeight="Bold" FontSize="11"
                                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                         </Border>
@@ -175,7 +245,14 @@
 
                     <!-- Lista -->
                     <ListBox ItemsSource="{Binding PedsView}" SelectedItem="{Binding SelectedPed}" VirtualizingPanel.IsVirtualizing="True"
-                             Visibility="{Binding ListView, Converter={StaticResource BoolToVis}}">
+                             Visibility="{Binding ListView, Converter={StaticResource BoolToVis}}"
+                             SelectionMode="Extended" SelectionChanged="Peds_SelectionChanged">
+                        <ListBox.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="{s:Tr Pt='★ Favoritar / tirar dos favoritos', En='★ Favorite / unfavorite'}"
+                                          Command="{Binding ToggleFavoriteCommand}"/>
+                            </ContextMenu>
+                        </ListBox.ContextMenu>
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <DockPanel>
@@ -186,9 +263,23 @@
                                         </Grid>
                                     </Border>
                                     <StackPanel VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock FontWeight="SemiBold" TextTrimming="CharacterEllipsis">
+                                            <Run Text="{Binding Title, Mode=OneWay}"/>
+                                            <Run Foreground="#FFD54A">
+                                                <Run.Style>
+                                                    <Style TargetType="Run">
+                                                        <Setter Property="Text" Value=""/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                                                                <Setter Property="Text" Value=" ★"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Run.Style>
+                                            </Run>
+                                        </TextBlock>
                                         <TextBlock Text="{Binding Subtitle}" Style="{StaticResource Dim}"/>
-                                        <TextBlock Text="{Binding SwapText}" Foreground="{StaticResource Accent}" FontSize="12"
+                                        <TextBlock Text="{Binding SwapText}" Foreground="{DynamicResource Accent}" FontSize="12"
                                                    Visibility="{Binding IsSwapped, Converter={StaticResource BoolToVis}}" TextTrimming="CharacterEllipsis"/>
                                     </StackPanel>
                                 </DockPanel>
@@ -202,7 +293,23 @@
             <Border Grid.Column="1" Background="{StaticResource Panel}" CornerRadius="8" Padding="18" Margin="0,0,12,0">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Top" Visibility="{Binding HasSelection, Converter={StaticResource BoolToVis}}">
-                        <TextBlock Text="{Binding SelectedPed.Title}" FontSize="22" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Command="{Binding ToggleFavoriteCommand}" Padding="10,4" Margin="0" VerticalAlignment="Center"
+                                    ToolTip="{s:Tr Pt='Favoritar este personagem', En='Favorite this character'}">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                        <Setter Property="Content" Value="{s:Tr Pt='☆ Favoritar', En='☆ Favorite'}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedPed.IsFavorite}" Value="True">
+                                                <Setter Property="Content" Value="{s:Tr Pt='★ Favorito', En='★ Favorite'}"/>
+                                                <Setter Property="Foreground" Value="#FFD54A"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <TextBlock Text="{Binding SelectedPed.Title}" FontSize="22" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                        </DockPanel>
                         <TextBlock Style="{StaticResource Dim}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis">
                             <Run Text="{Binding SelectedPed.CategoryLabel, Mode=OneWay}"/>
                             <Run Text=" · "/>
@@ -226,7 +333,7 @@
                                 </Border>
                                 <TextBlock Text="{Binding SelectedPed.Files}" Style="{StaticResource Dim}" Margin="0,6,0,0" TextTrimming="CharacterEllipsis"/>
                             </StackPanel>
-                            <TextBlock Grid.Column="1" Text="→" FontSize="30" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource Accent}"/>
+                            <TextBlock Grid.Column="1" Text="→" FontSize="30" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource Accent}"/>
                             <StackPanel Grid.Column="2">
                                 <TextBlock Text="{s:Tr Pt='NOVA SKIN', En='NEW SKIN'}" Style="{StaticResource Dim}" Margin="0,0,0,6"/>
                                 <Border Height="230" CornerRadius="6" Background="{StaticResource PanelAlt}" ClipToBounds="True">
@@ -240,7 +347,7 @@
                             </StackPanel>
                         </Grid>
 
-                        <Border Margin="0,14,0,0" Padding="10" CornerRadius="6" Background="{StaticResource AccentDim}"
+                        <Border Margin="0,14,0,0" Padding="10" CornerRadius="6" Background="{DynamicResource AccentDim}"
                                 Visibility="{Binding SelectedPed.IsCj, Converter={StaticResource BoolToVis}, FallbackValue=Collapsed}">
                             <TextBlock TextWrapping="Wrap" FontSize="12"
                                        Text="{s:Tr Pt='CJ é especial: o corpo dele vem das peças de roupa do player.img. Use skins importadas como &quot;Pacote do CJ&quot; (torso, legs, feet, head…). Para virar outro personagem, use um mod como o Skin Selector (CLEO).', En='CJ is special: his body comes from the player.img clothing parts. Use skins imported as &quot;CJ pack&quot; (torso, legs, feet, head…). To become another character, use a mod such as Skin Selector (CLEO).'}"/>
@@ -263,6 +370,11 @@
                             </ItemsControl>
                         </StackPanel>
 
+                        <Border Margin="0,14,0,0" Padding="10,8" CornerRadius="6" Background="{DynamicResource AccentDim}"
+                                Visibility="{Binding IsMulti, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="{Binding MultiText}" TextWrapping="Wrap" FontSize="12"/>
+                        </Border>
+
                         <DockPanel Margin="0,14,0,0">
                             <TextBlock DockPanel.Dock="Left" Text="{s:Tr Pt='Modo:', En='Mode:'}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <ComboBox ItemsSource="{Binding Modes}" SelectedItem="{Binding SelectedMode}" DisplayMemberPath="Label"/>
@@ -273,7 +385,7 @@
                                     ToolTip="Enter"/>
                             <Button Content="{s:Tr Pt='Desfazer troca', En='Undo swap'}" Command="{Binding RevertSelectedCommand}" Padding="18,8"/>
                         </StackPanel>
-                        <TextBlock Margin="0,2,0,0" Foreground="{StaticResource Accent}" FontSize="12" Text="{Binding SelectedSwapText}"/>
+                        <TextBlock Margin="0,2,0,0" Foreground="{DynamicResource Accent}" FontSize="12" Text="{Binding SelectedSwapText}"/>
                     </StackPanel>
 
                     <!-- Trocas ativas -->
@@ -306,8 +418,8 @@
                                                             ToolTip="{s:Tr Pt='Mostrar os modelos', En='Show the models'}"
                                                             Visibility="{Binding HasMany, Converter={StaticResource BoolToVis}}"/>
                                                     <TextBlock VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
-                                                        <Run Text="{Binding Title, Mode=OneWay}" FontWeight="SemiBold"/><Run Text="{Binding CountText, Mode=OneWay}" Foreground="{StaticResource Accent}"/>
-                                                        <Run Text=" → " Foreground="{StaticResource Accent}"/>
+                                                        <Run Text="{Binding Title, Mode=OneWay}" FontWeight="SemiBold"/><Run Text="{Binding CountText, Mode=OneWay}" Foreground="{DynamicResource Accent}"/>
+                                                        <Run Text=" → " Foreground="{DynamicResource Accent}"/>
                                                         <Run Text="{Binding SkinName, Mode=OneWay}"/>
                                                         <Run Text="{Binding ModeText, Mode=OneWay, StringFormat=  ({0})}" Foreground="{StaticResource FgDim}"/>
                                                     </TextBlock>
@@ -340,19 +452,54 @@
 
             <!-- Biblioteca -->
             <DockPanel Grid.Column="2">
-                <TextBlock DockPanel.Dock="Top" Text="{s:Tr Pt='Biblioteca de skins', En='Skin library'}" Style="{StaticResource H2}"/>
+                <DockPanel DockPanel.Dock="Top">
+                    <Button DockPanel.Dock="Right" Content="⋯" Padding="10,0" Margin="0,0,0,8" VerticalAlignment="Top" Click="LibraryMenu_Click"
+                            ToolTip="{s:Tr Pt='Backup da biblioteca', En='Library backup'}">
+                        <Button.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="{s:Tr Pt='Exportar biblioteca (.zip)…', En='Export library (.zip)…'}" Command="{Binding ExportLibraryCommand}"/>
+                                <MenuItem Header="{s:Tr Pt='Restaurar backup (.zip)…', En='Restore backup (.zip)…'}" Command="{Binding RestoreLibraryCommand}"/>
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+                    <TextBlock Text="{s:Tr Pt='Biblioteca de skins', En='Skin library'}" Style="{StaticResource H2}"/>
+                </DockPanel>
                 <WrapPanel DockPanel.Dock="Top">
                     <Button Content="{s:Tr Pt='+ Arquivos/.zip', En='+ Files/.zip'}" Command="{Binding ImportFilesCommand}"/>
                     <Button Content="{s:Tr Pt='+ Pasta', En='+ Folder'}" Command="{Binding ImportFolderCommand}"/>
                     <Button Content="{s:Tr Pt='+ Pacote do CJ', En='+ CJ pack'}" Command="{Binding ImportCjPackCommand}"/>
                 </WrapPanel>
+                <Grid DockPanel.Dock="Top" Margin="0,2,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="6"/>
+                        <ColumnDefinition Width="118"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid>
+                        <TextBox x:Name="SkinSearchBox" Text="{Binding SkinSearch, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center"/>
+                        <TextBlock Text="{s:Tr Pt='🔍 Buscar skin…', En='🔍 Search skin…'}" Margin="9,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource Dim}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Text, ElementName=SkinSearchBox}" Value="">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+                    <ComboBox Grid.Column="2" ItemsSource="{Binding SkinSorts}" SelectedItem="{Binding SelectedSkinSort}" DisplayMemberPath="Label"
+                              ToolTip="{s:Tr Pt='Ordenar', En='Sort'}"/>
+                </Grid>
                 <DockPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
                     <Button DockPanel.Dock="Right" Content="{s:Tr Pt='Remover', En='Remove'}" Command="{Binding RemoveSkinCommand}" Margin="0"/>
                     <Button DockPanel.Dock="Right" Content="{s:Tr Pt='Renomear', En='Rename'}" Command="{Binding BeginRenameCommand}"
                             ToolTip="{s:Tr Pt='Renomear a skin (F2 ou clique duplo)', En='Rename the skin (F2 or double-click)'}"/>
                     <TextBlock Text="{s:Tr Pt='Arraste .dff, .txd, pastas ou .zip para cá', En='Drop .dff, .txd, folders or .zip here'}" Style="{StaticResource Dim}" VerticalAlignment="Center" TextWrapping="Wrap"/>
                 </DockPanel>
-                <ListBox x:Name="SkinList" ItemsSource="{Binding Skins}" SelectedItem="{Binding SelectedSkin}"
+                <ListBox x:Name="SkinList" ItemsSource="{Binding SkinsView}" SelectedItem="{Binding SelectedSkin}"
                          AllowDrop="True" Drop="SkinList_Drop" DragOver="SkinList_DragOver"
                          MouseDoubleClick="SkinList_DoubleClick" KeyDown="SkinList_KeyDown">
                     <ListBox.ContextMenu>
@@ -384,6 +531,8 @@
                                              Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}"
                                              IsVisibleChanged="RenameBox_IsVisibleChanged" KeyDown="RenameBox_KeyDown" LostKeyboardFocus="RenameBox_LostFocus"/>
                                     <TextBlock Text="{Binding Subtitle}" Style="{StaticResource Dim}" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{Binding UsageText}" Foreground="{DynamicResource Accent}" FontSize="11"
+                                               Visibility="{Binding IsUsed, Converter={StaticResource BoolToVis}}"/>
                                 </StackPanel>
                             </DockPanel>
                         </DataTemplate>
@@ -397,7 +546,7 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Border x:Name="t" Margin="0,6,0,0" Padding="12,10" CornerRadius="8" Background="#2E3139"
-                                BorderBrush="{StaticResource Accent}" BorderThickness="3,0,0,0">
+                                BorderBrush="{DynamicResource Accent}" BorderThickness="3,0,0,0">
                             <Border.Effect>
                                 <DropShadowEffect BlurRadius="16" ShadowDepth="2" Opacity="0.5"/>
                             </Border.Effect>
@@ -406,7 +555,7 @@
                                         Background="Transparent" BorderThickness="0" VerticalAlignment="Top"/>
                                 <Button DockPanel.Dock="Right" Content="{Binding ActionLabel}" Command="{Binding ActionCommand}" Padding="10,3" Margin="8,0,0,0"
                                         VerticalAlignment="Center" Visibility="{Binding HasAction, Converter={StaticResource BoolToVis}}"/>
-                                <TextBlock x:Name="icon" DockPanel.Dock="Left" Text="{Binding Icon}" Foreground="{StaticResource Accent}" Margin="0,0,10,0" FontWeight="Bold"/>
+                                <TextBlock x:Name="icon" DockPanel.Dock="Left" Text="{Binding Icon}" Foreground="{DynamicResource Accent}" Margin="0,0,10,0" FontWeight="Bold"/>
                                 <TextBlock Text="{Binding Text}" TextWrapping="Wrap" VerticalAlignment="Center"/>
                             </DockPanel>
                         </Border>

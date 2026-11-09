@@ -53,6 +53,18 @@ public sealed class AppSettings
     /// <summary>Lado das miniaturas na grade, em pixels.</summary>
     public int ThumbSize { get; set; } = 112;
 
+    /// <summary>Cor de destaque da interface: "orange", "green", "yellow", "purple", "blue" ou "pink".</summary>
+    public string Accent { get; set; } = "orange";
+
+    /// <summary>Mostra as versões de cutscene na lista de personagens (elas já são trocadas junto com o personagem).</summary>
+    public bool ShowCutscenes { get; set; }
+
+    /// <summary>Personagens marcados com estrela (GameModel.Key).</summary>
+    public List<string> Favorites { get; set; } = new();
+
+    /// <summary>Ordem da biblioteca: "recent", "name" ou "usage".</summary>
+    public string SkinSort { get; set; } = "recent";
+
     /// <summary>Fecha o programa depois de clicar em Jogar.</summary>
     public bool CloseOnPlay { get; set; }
 

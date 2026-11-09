@@ -86,6 +86,13 @@ public class IdeAndCatalogTests
         Assert.True(DffInfo.IsSkinned(ped));
         Assert.True(DffInfo.IsSkinned(ped.AsSpan(0, DffInfo.PrefixBytes)));
         Assert.False(DffInfo.IsSkinned(Fake.PedDff(skinned: false)));
+        Assert.True(DffInfo.IsCharacter(ped.AsSpan(0, DffInfo.PrefixBytes)));
+        Assert.Equal(32, DffInfo.BoneCount(ped));
+        var prop = Fake.PedDff(skinned: true, bones: 3);
+        Assert.True(DffInfo.IsSkinned(prop));
+        Assert.False(DffInfo.IsCharacter(prop)); // objeto animado de cutscene não é personagem
+        Assert.False(DffInfo.IsCharacter(Fake.PedDff(skinned: true, bones: 25))); // carro de cutscene (ex.: cscopcarsf)
+        Assert.True(DffInfo.IsCharacter(Fake.PedDff(skinned: true, bones: 61))); // ped de cutscene com rosto
         Assert.False(DffInfo.IsSkinned(Fake.Txd8888("x", 4, 4, 1, 1, 1)));
     }
 
@@ -169,6 +176,26 @@ public class SwapTests
         var skin = lib.Import(new[] { WriteSkin(t, "niko", 5) }, false).Imported.Single();
         lib.Rename(skin, "Niko Bellic (GTA IV)");
         Assert.Equal("Niko Bellic (GTA IV)", new SkinLibrary(paths).Skins.Single().Name);
+    }
+
+    [Fact]
+    public void Library_backup_round_trip()
+    {
+        using var t = new TempDir();
+        var lib = new SkinLibrary(new AppPaths(t.Combine("pc1")));
+        var niko = lib.Import(new[] { WriteSkin(t, "niko", 5) }, false).Imported.Single();
+        lib.Rename(niko, "Niko Bellic");
+        lib.Import(new[] { WriteSkin(t, "tommy", 6) }, false);
+        var zip = t.Combine("backup.zip");
+        lib.ExportBackup(zip);
+        Assert.True(SkinLibrary.IsBackup(zip));
+
+        var other = new SkinLibrary(new AppPaths(t.Combine("pc2")));
+        Assert.Equal((2, 0), other.ImportBackup(zip));
+        Assert.Contains(other.Skins, s => s.Name == "Niko Bellic");
+        Assert.Equal(lib.ReadFile(niko, "niko.dff"), other.ReadFile(other.Skins.Single(s => s.Id == niko.Id), "niko.dff"));
+        Assert.Equal((0, 2), other.ImportBackup(zip)); // de novo: tudo já existe
+        Assert.Equal(2, new SkinLibrary(new AppPaths(t.Combine("pc2"))).Skins.Count);
     }
 
     [Fact]
@@ -295,6 +322,7 @@ public class SwapTests
         Assert.Equal("cutscene.img", cs.ImgName);
         Assert.Equal("cutscene.img", scanner.TryLoadCache()!.Single(m => m.ModelName == "cssweet").ImgName);
         Assert.Contains("cssweet.png", thumbs);
+        Assert.DoesNotContain(models, m => m.ModelName == "cscard"); // objeto de cutscene fica de fora
         var sweet = models.Single(m => m.ModelName == "sweet");
         Assert.Contains(PedCatalog.LinkedModels(sweet, models), m => m.ModelName == "cssweet");
     }

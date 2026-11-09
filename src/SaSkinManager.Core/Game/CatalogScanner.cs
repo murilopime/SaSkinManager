@@ -11,7 +11,7 @@ public sealed record ScanProgress(int Done, int Total, string Current);
 /// </summary>
 public sealed class CatalogScanner
 {
-    private const int CacheVersion = 4; // 2: especiais e cutscenes; 3: miniaturas maiores; 4: modelos do cutscene.img
+    private const int CacheVersion = 5; // 2: especiais e cutscenes; 3: miniaturas maiores; 4: cutscene.img; 5: ignora objetos animados
 
     private readonly GameInstall _game;
     private readonly string _cacheDir;

@@ -188,6 +188,79 @@ public sealed class SkinLibrary
 
     public byte[] ReadFile(LibrarySkin skin, string file) => File.ReadAllBytes(FilePath(skin, file));
 
+    // ---- backup da biblioteca (.zip) ----
+
+    /// <summary>Arquivo que marca um .zip como backup da biblioteca (e não um mod comum).</summary>
+    public const string BackupMarker = "saskinmanager-library.json";
+
+    /// <summary>Salva todas as skins (arquivos + nome + data) num .zip, para backup ou levar para outro PC.</summary>
+    public void ExportBackup(string zipPath)
+    {
+        var tmp = zipPath + ".tmp";
+        if (File.Exists(tmp)) File.Delete(tmp);
+        using (var zip = ZipFile.Open(tmp, ZipArchiveMode.Create))
+        {
+            var marker = zip.CreateEntry(BackupMarker);
+            using (var w = new StreamWriter(marker.Open()))
+                w.Write(JsonSerializer.Serialize(new { Version = 1, Skins = _skins.Count, ExportedAt = DateTime.Now }));
+            foreach (var s in _skins)
+            {
+                foreach (var f in s.Files.Append("skin.json"))
+                {
+                    var src = FilePath(s, f);
+                    if (File.Exists(src)) zip.CreateEntryFromFile(src, $"{s.Id}/{f}", CompressionLevel.Optimal);
+                }
+            }
+        }
+        File.Move(tmp, zipPath, overwrite: true);
+    }
+
+    public static bool IsBackup(string zipPath)
+    {
+        try
+        {
+            using var zip = ZipFile.OpenRead(zipPath);
+            return zip.GetEntry(BackupMarker) is not null;
+        }
+        catch (InvalidDataException) { return false; }
+    }
+
+    /// <summary>
+    /// Restaura um backup: adiciona as skins que ainda não existem (mesmo id = já existe, é pulada).
+    /// Só aceita arquivos .dff/.txd com nome simples (nada de caminhos dentro do zip).
+    /// </summary>
+    public (int Added, int Skipped) ImportBackup(string zipPath)
+    {
+        int added = 0, skipped = 0;
+        using var zip = ZipFile.OpenRead(zipPath);
+        foreach (var meta in zip.Entries.Where(e => e.Name == "skin.json"))
+        {
+            LibrarySkin? s;
+            using (var r = new StreamReader(meta.Open()))
+            {
+                try { s = JsonSerializer.Deserialize<LibrarySkin>(r.ReadToEnd()); }
+                catch (JsonException) { s = null; }
+            }
+            if (s is null || s.Id.Length == 0 || s.Id.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || s.Id.Contains(".."))
+                continue;
+            if (_skins.Any(x => x.Id == s.Id)) { skipped++; continue; }
+
+            var folder = meta.FullName[..^"skin.json".Length];
+            var files = s.Files.Where(f => f == Path.GetFileName(f) && IsModelFile(f)).ToList();
+            if (files.Count == 0 || files.Any(f => zip.GetEntry(folder + f) is null)) continue;
+
+            var dir = SkinDir(s);
+            Directory.CreateDirectory(dir);
+            foreach (var f in files) zip.GetEntry(folder + f)!.ExtractToFile(Path.Combine(dir, f), overwrite: true);
+            var skin = new LibrarySkin { Id = s.Id, Name = s.Name, Kind = s.Kind, Files = files, Source = s.Source, ImportedAt = s.ImportedAt };
+            SaveMeta(skin);
+            _skins.Add(skin);
+            added++;
+        }
+        _skins.Sort((a, b) => b.ImportedAt.CompareTo(a.ImportedAt));
+        return (added, skipped);
+    }
+
     private static bool IsModelFile(string path) =>
         path.EndsWith(".dff", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".txd", StringComparison.OrdinalIgnoreCase);
 }

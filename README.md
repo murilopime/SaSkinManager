@@ -1,53 +1,67 @@
+<p align="center"><img src="docs/icon.png" width="96" alt="icon"></p>
+
 # SA Skin Manager
 
-Launcher e gerenciador para trocar as skins de personagens do **GTA San Andreas (PC, versão clássica)**.
-Mostra todos os NPCs do jogo, deixa escolher "trocar este personagem por esta skin" e instala sozinho,
-com desfazer em um clique.
+**English** · [Português](README.pt-BR.md)
 
-## Como funciona
+Launcher and manager for swapping character skins in **GTA San Andreas (PC, classic version)**.
+It lists every character in the game, lets you pick "replace this character with this skin" and installs it for you,
+with one-click undo. The program is available in English and Portuguese.
 
-- **Primeira execução:** o programa tenta achar a pasta do jogo (Steam, Rockstar, caminhos comuns). Você confirma ou escolhe a pasta.
-  Com a opção *"Carregar todos os modelos de NPC agora"* marcada, ele lê o `data/peds.ide` e o `models/gta3.img`
-  e monta a lista completa de personagens com miniaturas. Depois disso tudo fica em cache.
-- **Biblioteca de skins:** importe arquivos `.dff` + `.txd`, uma pasta ou um `.zip` (ou arraste para a lista).
-- **Trocar:** selecione o personagem à esquerda, a skin à direita e clique em *Trocar por esta skin*.
-  O programa renomeia os arquivos para o nome do modelo alvo (ex.: `ballas1.dff` / `ballas1.txd`).
-- **Modos de instalação:**
-  - **Mod Loader** (recomendado, usado automaticamente se o `modloader.asi` existir): grava em
-    `modloader\SaSkinManager\<modelo>\`. Os `.img` originais não são alterados.
-  - **IMG direto:** substitui as entradas dentro do `gta3.img`. Antes da primeira alteração ele faz um backup completo
-    (`gta3.img.skinmanager.bak`) e guarda o original de cada arquivo trocado para o *Desfazer*.
-- **Cutscenes e variações:** ao trocar um personagem da história (ex.: Big Smoke), o programa troca junto a versão de
-  cutscene (`cssmoke`, do `models\cutscene.img`) e as variações de missão (`smokev`…). Dá para desmarcar as que não quiser.
-- **Trocas ativas:** agrupadas por personagem, com *Desfazer tudo*, a lista dos modelos de cada troca e *Restaurar tudo*.
-- **Renomear skins** da biblioteca: botão *Renomear*, `F2`, clique duplo ou botão direito.
-- **Jogar:** abre o `gta_sa.exe`.
-- **Grade ou lista:** os personagens aparecem em grade de miniaturas (ou lista compacta). Atalhos: `Ctrl+F` busca, `Enter` troca.
-- **Configurações:** idioma (português / English), modo de instalação padrão, grade ou lista, tamanho das miniaturas,
-  trocar a pasta do jogo e limpar o cache.
+## How it works
+
+- **First run:** the program looks for the game folder (Steam, Rockstar, common paths). You confirm it or pick the folder.
+  With *"Load every NPC model now"* checked, it reads `data/peds.ide`, `models/gta3.img` and `models/cutscene.img`
+  and builds the full character list with thumbnails. After that everything is cached.
+- **Characters only:** characters are recognized by their skeleton (32 bones or more). Animated cutscene objects and
+  cars are left out.
+- **Skin library:** import `.dff` + `.txd` files, a folder or a `.zip` (or drop them on the list).
+  You can search, sort (newest, name, most used), rename (`F2`, double-click or right-click) and see how many characters
+  use each skin. The **⋯** menu exports the whole library to a backup `.zip` and restores it later.
+- **Swap:** select the character on the left, the skin on the right and click *Swap to this skin*.
+  Use `Ctrl`/`Shift` to select several characters and apply the same skin to all of them.
+- **Cutscenes and variants:** when you swap a story character (e.g. Big Smoke), its cutscene version (`cssmoke`) and
+  mission variants (`smokev`…) are swapped too. You can uncheck the ones you don't want.
+- **Install modes:**
+  - **Mod Loader** (recommended, used automatically when `modloader.asi` exists): writes to
+    `modloader\SaSkinManager\<model>\`. The original `.img` files are not changed.
+  - **Direct IMG:** replaces the entries inside the `.img`. Before the first change it makes a full backup
+    (`gta3.img.skinmanager.bak`) and keeps the original of every replaced file for *Undo*.
+- **Active swaps:** grouped by character, with *Undo all*, the list of models in each swap and *Restore all*.
+- **Filters:** *All*, *Swapped*, *Not swapped* and *★ Favorites* (mark them with the star).
+- **Shortcuts:** `Ctrl+F` search, `Enter` swap, `Ctrl+Z` undo the last swap.
+- **Settings:** language (English / Português), accent color (orange, green, yellow, purple, blue, pink),
+  default install mode, grid or list, thumbnail size, show cutscene versions in the list,
+  change the game folder and clear the cache.
 
 ### CJ
 
-O CJ não é um personagem comum: o corpo dele é montado com peças de roupa do `models/player.img`.
-Importe pacotes de "CJ replacement" pelo botão **+ Pacote do CJ**: os arquivos mantêm os nomes originais e vão para
-`modloader\SaSkinManager\cj\player.img\` ou para dentro do `player.img`.
-Para jogar com um NPC comum no lugar do CJ, use um mod como o Skin Selector (CLEO).
+CJ is not a regular character: his body is built from clothing parts in `models/player.img`.
+Import "CJ replacement" packs with the **+ CJ pack** button: the files keep their original names and go to
+`modloader\SaSkinManager\cj\player.img\` or into `player.img`.
+To play as a regular NPC instead of CJ, use a mod such as Skin Selector (CLEO).
 
-## Instalar
+## Install
 
-Baixe o `SaSkinManager.exe` na página de [Releases](../../releases) e execute. Não precisa instalar o .NET.
+Download `SaSkinManager.exe` from the [Releases](../../releases) page and run it. No .NET install needed.
 
-> Recomendado: no primeiro teste use uma **cópia** da pasta do jogo.
+> Recommended: use a **copy** of the game folder for your first test.
 
-## Requisitos
+## Requirements
 
 - Windows 10/11
-- GTA San Andreas PC clássico (1.0, Steam ou "downgrade"). A *Definitive Edition* usa outro formato e não é suportada.
-- Opcional: [Mod Loader](https://github.com/thelink2012/modloader)
+- Classic GTA San Andreas for PC (1.0, Steam or "downgraded"). The *Definitive Edition* uses another format and is not supported.
+- Optional: [Mod Loader](https://github.com/thelink2012/modloader)
 
-Dados do programa ficam em `%AppData%\SaSkinManager` (configurações, biblioteca, cache, backups por entrada).
+Program data lives in `%AppData%\SaSkinManager` (settings, library, cache, per-entry backups).
 
-## Compilar
+## 🎨 Icon wanted!
+
+The current icon (the cheetah) is only a **placeholder**. If you'd like to make the official SA Skin Manager icon,
+open an [Issue](../../issues) with your suggestion (square PNG, ideally 256×256 or larger).
+Suggestions are very welcome!
+
+## Build
 
 ```bash
 dotnet build
@@ -55,17 +69,17 @@ dotnet test
 dotnet publish src/SaSkinManager.App -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o publish
 ```
 
-## Estrutura
+## Layout
 
-- `src/SaSkinManager.Core`: formatos (IMG VER2, IDE, TXD/DXT), catálogo de personagens, biblioteca e lógica de troca. Sem WPF, testável.
-- `src/SaSkinManager.App`: interface WPF (.NET 8).
-- `tests/SaSkinManager.Core.Tests`: testes xUnit com IMG/TXD sintéticos.
+- `src/SaSkinManager.Core`: file formats (IMG VER2, IDE, TXD/DXT, DFF), character catalog, library and swap logic. No WPF, testable.
+- `src/SaSkinManager.App`: WPF user interface (.NET 8).
+- `tests/SaSkinManager.Core.Tests`: xUnit tests with synthetic IMG/TXD files.
 
 ## Roadmap
 
-- v2: preview 3D do modelo (`.dff` + `.txd`), lado a lado original × nova; perfis de trocas.
-- v3: troca de veículos (carros, motos, barcos, aviões, helicópteros…) via `data/vehicles.ide`.
+- v2: 3D model preview (`.dff` + `.txd`), original vs. new side by side, grid of rotating models; swap profiles.
+- v3: vehicle swaps (cars, bikes, boats, planes, helicopters…) via `data/vehicles.ide`.
 
-## Licença
+## License
 
-[GPL-3.0](LICENSE). Nenhum arquivo do jogo (Rockstar Games) é distribuído com este projeto.
+[GPL-3.0](LICENSE). No game files (Rockstar Games) are distributed with this project.

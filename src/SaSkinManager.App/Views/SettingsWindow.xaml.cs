@@ -47,8 +47,16 @@ public partial class SettingsWindow : Window
         ViewBox.ItemsSource = views;
         ViewBox.SelectedItem = views.First(v => v.Value == s.GridView);
 
+        var accents = AccentColors.All();
+        AccentBox.ItemsSource = accents;
+        AccentBox.SelectedItem = accents.FirstOrDefault(a => a.Key == s.Accent) ?? accents[0];
+        _ready = true;
+        // fechou sem salvar (Cancelar, Esc ou X): volta a cor que estava
+        Closed += (_, _) => { if (DialogResult != true) AccentColors.Apply(App.Settings.Accent); };
+
         ThumbSlider.Value = Math.Clamp(s.ThumbSize, 72, 200);
         CloseOnPlayBox.IsChecked = s.CloseOnPlay;
+        ShowCutscenesBox.IsChecked = s.ShowCutscenes;
         GamePathText.Text = gamePath;
 
         var version = Assembly.GetExecutingAssembly().GetName().Version;
@@ -64,10 +72,20 @@ public partial class SettingsWindow : Window
         s.GridView = ((Option<bool>)ViewBox.SelectedItem).Value;
         s.ThumbSize = (int)ThumbSlider.Value;
         s.CloseOnPlay = CloseOnPlayBox.IsChecked == true;
+        s.ShowCutscenes = ShowCutscenesBox.IsChecked == true;
+        s.Accent = ((AccentOption)AccentBox.SelectedItem).Key;
         s.Save(App.Paths);
 
         LanguageChanged = L.Resolve(s.Language) != L.Resolve(_oldLanguage);
         L.Set(s.Language);
+    }
+
+    private bool _ready;
+
+    /// <summary>Prévia ao vivo: a cor muda no programa inteiro assim que é escolhida.</summary>
+    private void Accent_Changed(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (_ready && AccentBox.SelectedItem is AccentOption a) AccentColors.Apply(a.Key);
     }
 
     private void Save_Click(object sender, RoutedEventArgs e)
